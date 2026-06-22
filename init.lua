@@ -1,154 +1,115 @@
--- init.lua
+-- init.lua (גרסת ה-Mega Hub המשולבת עם ה-Target המקורי של אורי)
+
+-- הגדרות ה-GitHub שלך
 local GITHUB_USER = "thepro2324"
 local REPO_NAME   = "GAME-LUA"
 
 local function import(path)
     local url = "https://raw.githubusercontent.com/" .. GITHUB_USER .. "/" .. REPO_NAME .. "/main/" .. path
-    local success, result = pcall(function() return game:HttpGet(url, true) end)
+    local success, result = pcall(function()
+        return game:HttpGet(url, true)
+    end)
     if success and result and result ~= "" then
-        local func = loadstring(result)
-        if func then return func() end
+        local func, err = loadstring(result)
+        if func then
+            return func()
+        end
     end
 end
 
--- טעינת המודול של הטארגט
-local TargetMod = import("modules/target.lua") or {}
+-- 1. טעינת רכיבי ה-UI והמודולים
+local Elements = import("ui/elements.lua")
+local Menu = import("ui/menu.lua")
+local PlayerMod    = import("modules/player.lua") or {}
+local VisualsMod   = import("modules/visuals.lua") or {}
+local WorldMod     = import("modules/world.lua") or {}
+local TeleportMod  = import("modules/teleport.lua") or {}
+local TargetMod    = import("modules/target.lua") or {}
 
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "ori_dev_script"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+if not Elements or not Menu then 
+    error("🔴 [Ori Dev] שגיאה בטעינת קבצי ה-UI מה-GitHub!")
+end
 
--- הפאנל הראשי (בעיצוב המקורי שלך)
-local frame = Instance.new("Frame")
-frame.Parent = screenGui
-frame.Size = UDim2.new(0.35, 0, 0.45, 0) -- מותאם אישית מכיוון שאין טאבים
-frame.Position = UDim2.new(0.325, 0, 0.2, 0)
-frame.BackgroundColor3 = Color3.new(0, 0, 0)
-frame.BackgroundTransparency = 0.5
-frame.BorderSizePixel = 0
-
-local uiCorner = Instance.new("UICorner")
-uiCorner.Parent = frame
-uiCorner.CornerRadius = UDim.new(0.05, 0)
-
-local border = Instance.new("UIStroke")
-border.Parent = frame
-border.Color = Color3.new(1, 1, 1)
-border.Thickness = 2
-border.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
--- כותרת
-local title = Instance.new("TextLabel")
-title.Parent = frame
-title.Size = UDim2.new(0.6, 0, 0.15, 0)
-title.Position = UDim2.new(0.05, 0, 0.02, 0)
-title.Text = "ori_dev_script"
-title.TextColor3 = Color3.new(1, 1, 1)
-title.TextScaled = true
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.Font = Enum.Font.SourceSansBold
-title.BackgroundTransparency = 1
-
--- שורת קרדיט
-local creditLabel = Instance.new("TextLabel")
-creditLabel.Parent = frame
-creditLabel.Size = UDim2.new(1, 0, 0.08, 0)
-creditLabel.Position = UDim2.new(0, 0, 0.90, 0)
-creditLabel.Text = "Created by ori_dev"
-creditLabel.TextColor3 = Color3.new(0.6, 0.6, 0.6)
-creditLabel.TextScaled = true
-creditLabel.Font = Enum.Font.SourceSansItalic
-creditLabel.BackgroundTransparency = 1
+-- אתחול ה-Menu הראשי
+local MenuInterface = Menu.init(Elements)
 
 ---------------------------------------------------------
--- כפתורי הקטנה וסגירה
+-- יצירת הטאבים
 ---------------------------------------------------------
-local minimizeButton = Instance.new("TextButton")
-minimizeButton.Parent = frame
-minimizeButton.Size = UDim2.new(0.08, 0, 0.1, 0)
-minimizeButton.Position = UDim2.new(0.78, 0, 0.04, 0)
-minimizeButton.Text = "-"
-minimizeButton.TextColor3 = Color3.new(1, 1, 1)
-minimizeButton.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-minimizeButton.Font = Enum.Font.SourceSansBold
-minimizeButton.TextScaled = true
-Instance.new("UICorner", minimizeButton).CornerRadius = UDim.new(0.3, 0)
 
-local closeButton = Instance.new("TextButton")
-closeButton.Parent = frame
-closeButton.Size = UDim2.new(0.08, 0, 0.1, 0)
-closeButton.Position = UDim2.new(0.88, 0, 0.04, 0)
-closeButton.Text = "X"
-closeButton.TextColor3 = Color3.new(1, 0.3, 0.3)
-closeButton.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-closeButton.Font = Enum.Font.SourceSansBold
-closeButton.TextScaled = true
-Instance.new("UICorner", closeButton).CornerRadius = UDim.new(0.3, 0)
+-- ==================== טאב 1: HOME ====================
+local homeTab = MenuInterface.createTab("Home", 1)
 
--- פריים קבוצת האלמנטים של ה-Target
-local targetGroup = Instance.new("Frame")
-targetGroup.Parent = frame
-targetGroup.Size = UDim2.new(1, 0, 0.75, 0)
-targetGroup.Position = UDim2.new(0, 0, 0.18, 0)
-targetGroup.BackgroundTransparency = 1
+local hGrid = Instance.new("Frame", homeTab)
+hGrid.Size = UDim2.new(0.95, 0, 0, 120)
+hGrid.BackgroundTransparency = 1
+local gh = Instance.new("UIGridLayout", hGrid) 
+gh.CellSize = UDim2.new(0.48, 0, 0, 32) 
+gh.CellPadding = UDim2.new(0, 8, 0, 8)
 
----------------------------------------------------------
--- אלמנטים TARGET
----------------------------------------------------------
+Elements.createToggleButton(hGrid, "Anti-AFK", true, PlayerMod.toggleAntiAFK or function() end)
+Elements.createToggleButton(hGrid, "Auto-Reset (Low HP)", false, PlayerMod.toggleAutoReset or function() end)
+Elements.createToggleButton(hGrid, "Hide Username", false, VisualsMod.toggleHideName or function() end)
+Elements.createToggleButton(hGrid, "FPS Unlocker", false, WorldMod.toggleFPS or function() end)
+
+
+-- ==================== טאב 2: TARGET (העיצוב המקורי המשוחזר שלך!) ====================
+local targetTab = MenuInterface.createTab("Target", 2)
+
+-- יצירת ה-TextBox המקורי שלך בתוך הטאב
 local textBox = Instance.new("TextBox")
-textBox.Parent = targetGroup
-textBox.Size = UDim2.new(0.8, 0, 0.18, 0)
-textBox.Position = UDim2.new(0.1, 0, 0.05, 0)
+textBox.Parent = targetTab
+textBox.Size = UDim2.new(0.9, 0, 0, 35)
+textBox.Position = UDim2.new(0.05, 0, 0, 10)
 textBox.PlaceholderText = "Target Nickname"
 textBox.Text = ""
-textBox.TextColor3 = Color3.new(1, 1, 1)
-textBox.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-textBox.BackgroundTransparency = 0.5
+textBox.TextColor3 = Color3.fromRGB(240, 240, 245)
+textBox.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
 textBox.Font = Enum.Font.SourceSans
-textBox.TextScaled = true
+textBox.TextSize = 16
 textBox.ClearTextOnFocus = false
-Instance.new("UICorner", textBox).CornerRadius = UDim.new(0.1, 0)
+Elements.addCorner(textBox, UDim.new(0, 6))
+Elements.addStroke(textBox, Color3.fromRGB(45, 45, 55), 1)
 
+-- חלון גלילה לתוצאות החיפוש בזמן אמת
 local searchResultsFrame = Instance.new("ScrollingFrame")
-searchResultsFrame.Parent = targetGroup
-searchResultsFrame.Size = UDim2.new(0.8, 0, 0.45, 0)
-searchResultsFrame.Position = UDim2.new(0.1, 0, 0.25, 0)
-searchResultsFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-searchResultsFrame.BackgroundTransparency = 0.1
+searchResultsFrame.Parent = targetTab
+searchResultsFrame.Size = UDim2.new(0.9, 0, 0, 100)
+searchResultsFrame.Position = UDim2.new(0.05, 0, 0, 50)
+searchResultsFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 searchResultsFrame.BorderSizePixel = 0
 searchResultsFrame.Visible = false
-searchResultsFrame.ScrollBarThickness = 5
-searchResultsFrame.ZIndex = 5
-Instance.new("UICorner", searchResultsFrame).CornerRadius = UDim.new(0.05, 0)
+searchResultsFrame.ScrollBarThickness = 4
+searchResultsFrame.ZIndex = 10
+Elements.addCorner(searchResultsFrame, UDim.new(0, 6))
 
 local searchListLayout = Instance.new("UIListLayout")
 searchListLayout.Parent = searchResultsFrame
 searchListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 searchListLayout.Padding = UDim.new(0, 2)
 
+-- רווח קטן
+local spacer = Instance.new("Frame", targetTab)
+spacer.Size = UDim2.new(1, 0, 0, 115) -- נותן מקום לחיפוש שלא יתנגש
+spacer.BackgroundTransparency = 1
+
+-- כפתור הסטארט/סטופ הגדול והצבעוני שלך
 local startButton = Instance.new("TextButton")
-startButton.Parent = targetGroup
-startButton.Size = UDim2.new(0.7, 0, 0.22, 0)
-startButton.Position = UDim2.new(0.15, 0, 0.65, 0)
+startButton.Parent = targetTab
+startButton.Size = UDim2.new(0.9, 0, 0, 40)
+startButton.Position = UDim2.new(0.05, 0, 0, 0)
 startButton.Text = "Start Targeter"
 startButton.TextColor3 = Color3.new(1, 1, 1)
 startButton.BackgroundColor3 = Color3.new(0.1, 0.5, 0.1)
-startButton.BackgroundTransparency = 0.3
 startButton.Font = Enum.Font.SourceSansBold
-startButton.TextScaled = true
-Instance.new("UICorner", startButton).CornerRadius = UDim.new(0.1, 0)
+startButton.TextSize = 18
+Elements.addCorner(startButton, UDim.new(0, 6))
 
----------------------------------------------------------
--- חיבור הלוגיקה מהמודול לחלונות הממשק
----------------------------------------------------------
-
--- עדכון תוצאות חיפוש בזמן אמת
+-- חיבור הלוגיקה והחיפוש של ה-Target
 textBox:GetPropertyChangedSignal("Text"):Connect(function()
     for _, child in ipairs(searchResultsFrame:GetChildren()) do
         if child:IsA("TextButton") then child:Destroy() end
     end
-    
     if not TargetMod.getMatches then return end
     local matches = TargetMod.getMatches(textBox.Text)
     
@@ -159,15 +120,15 @@ textBox:GetPropertyChangedSignal("Text"):Connect(function()
             local btn = Instance.new("TextButton")
             btn.Parent = searchResultsFrame
             btn.Size = UDim2.new(1, 0, 0, 23)
-            btn.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+            btn.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
             btn.BorderSizePixel = 0
-            btn.Text = " " .. name
+            btn.Text = "  " .. name
             btn.TextColor3 = Color3.new(1, 1, 1)
             btn.TextXAlignment = Enum.TextXAlignment.Left
             btn.Font = Enum.Font.SourceSans
             btn.TextSize = 14
-            btn.ZIndex = 6
-            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+            btn.ZIndex = 11
+            Elements.addCorner(btn, UDim.new(0, 4))
             
             btn.MouseButton1Click:Connect(function()
                 textBox.Text = name
@@ -179,7 +140,6 @@ textBox:GetPropertyChangedSignal("Text"):Connect(function()
     end
 end)
 
--- לחיצה על כפתור ה-Start/Stop
 startButton.MouseButton1Click:Connect(function()
     if not TargetMod.startTargeting then return end
     if TargetMod.isTeleporting then
@@ -189,29 +149,104 @@ startButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- כפתור הקטנה
-local isMinimized = false
-local originalSize = frame.Size
-minimizeButton.MouseButton1Click:Connect(function()
-    isMinimized = not isMinimized
-    if isMinimized then
-        frame.Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset, 0, 45) 
-        targetGroup.Visible = false
-        creditLabel.Visible = false
-        minimizeButton.Text = "+"
-        searchResultsFrame.Visible = false
-    else
-        frame.Size = originalSize
-        minimizeButton.Text = "-"
-        targetGroup.Visible = true
-        creditLabel.Visible = true
-    end
+
+-- ==================== טאב 3: PLAYER ====================
+local playerTab = MenuInterface.createTab("Player", 3)
+
+Elements.createSlider(playerTab, "Walk Speed", 16, 500, 16, function(v) 
+    shared.walkSpeedValue = v 
+    if PlayerMod.updateSpeed then PlayerMod.updateSpeed(v) end
 end)
 
--- כפתור סגירה
-closeButton.MouseButton1Click:Connect(function()
-    if TargetMod.stopTargeting then TargetMod.stopTargeting() end
-    screenGui:Destroy()
+Elements.createSlider(playerTab, "Jump Power", 50, 1000, 50, function(v) 
+    shared.jumpPowerValue = v 
+    if PlayerMod.updateJump then PlayerMod.updateJump(v) end
 end)
 
-print("🎯 [Ori Dev] מערכת ה-Targeter הטהורה מוכנה להפעלה!")
+Elements.createSlider(playerTab, "Fly Speed", 20, 500, 100, function(v) shared.flySpeed = v end)
+Elements.createSlider(playerTab, "Hip Height", 0, 50, 2, function(v) if PlayerMod.updateHipHeight then PlayerMod.updateHipHeight(v) end end)
+
+local pGrid = Instance.new("Frame", playerTab)
+pGrid.Size = UDim2.new(0.95, 0, 0, 160)
+pGrid.BackgroundTransparency = 1
+local g1 = Instance.new("UIGridLayout", pGrid) 
+g1.CellSize = UDim2.new(0.48, 0, 0, 32) 
+g1.CellPadding = UDim2.new(0, 8, 0, 8)
+
+Elements.createToggleButton(pGrid, "Fly Mode", false, PlayerMod.toggleFly or function() end)
+Elements.createToggleButton(pGrid, "Infinite Jump", false, PlayerMod.toggleInfJump or function() end)
+Elements.createToggleButton(pGrid, "Noclip", false, PlayerMod.toggleNoclip or function() end)
+Elements.createToggleButton(pGrid, "Ctrl+Click TP", false, TeleportMod.toggleCtrlClick or function() end)
+Elements.createToggleButton(pGrid, "God Mode", false, PlayerMod.toggleGodMode or function() end)
+Elements.createToggleButton(pGrid, "Invisible", false, PlayerMod.toggleInvisible or function() end)
+Elements.createToggleButton(pGrid, "No Ragdoll", false, PlayerMod.toggleNoRagdoll or function() end)
+Elements.createToggleButton(pGrid, "Auto-Heal", false, PlayerMod.toggleAutoHeal or function() end)
+
+
+-- ==================== טאב 4: VISUALS ====================
+local visualsTab = MenuInterface.createTab("Visuals", 4)
+
+local vGrid = Instance.new("Frame", visualsTab)
+vGrid.Size = UDim2.new(0.95, 0, 0, 120)
+vGrid.BackgroundTransparency = 1
+local g2 = Instance.new("UIGridLayout", vGrid) 
+g2.CellSize = UDim2.new(0.48, 0, 0, 32) 
+g2.CellPadding = UDim2.new(0, 8, 0, 8)
+
+Elements.createToggleButton(vGrid, "Master ESP", false, VisualsMod.toggleMasterESP or function() end)
+Elements.createToggleButton(vGrid, "ESP Box", false, VisualsMod.toggleESPBox or function() end)
+Elements.createToggleButton(vGrid, "ESP Names", false, VisualsMod.toggleESPNames or function() end)
+Elements.createToggleButton(vGrid, "ESP Tracers", false, VisualsMod.toggleTracers or function() end)
+Elements.createToggleButton(vGrid, "Fullbright", false, VisualsMod.toggleFullbright or function() end)
+Elements.createToggleButton(vGrid, "Chams", false, VisualsMod.toggleChams or function() end)
+
+
+-- ==================== טאב 5: WORLD ====================
+local worldTab = MenuInterface.createTab("World", 5)
+
+Elements.createSlider(worldTab, "Gravity Level", 0, 400, 196, WorldMod.setGravity or function() end)
+Elements.createSlider(worldTab, "Field of View", 50, 120, 70, WorldMod.setFOV or function() end)
+Elements.createSlider(worldTab, "Time of Day", 0, 24, 12, function(v) if WorldMod.setTime then WorldMod.setTime(v) end end)
+
+local wGrid = Instance.new("Frame", worldTab)
+wGrid.Size = UDim2.new(0.95, 0, 0, 80)
+wGrid.BackgroundTransparency = 1
+local gw = Instance.new("UIGridLayout", wGrid) 
+gw.CellSize = UDim2.new(0.48, 0, 0, 32) 
+gw.CellPadding = UDim2.new(0, 8, 0, 8)
+
+Elements.createToggleButton(wGrid, "Remove Fog", false, WorldMod.toggleFog or function() end)
+Elements.createToggleButton(wGrid, "Freeze World Time", false, WorldMod.toggleFreezeTime or function() end)
+Elements.createToggleButton(wGrid, "Destroy Map Elements", false, WorldMod.destroyMap or function() end)
+
+
+-- ==================== טאב 6: SERVERS ====================
+local serversTab = MenuInterface.createTab("Servers", 6)
+
+local rjButton = Instance.new("TextButton", serversTab)
+rjButton.Size = UDim2.new(0.95, 0, 0, 32)
+rjButton.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+rjButton.TextColor3 = Color3.fromRGB(240, 240, 245)
+rjButton.Font = Enum.Font.GothamBold
+rjButton.TextSize = 12
+rjButton.Text = "QUICK REJOIN"
+Elements.addCorner(rjButton, UDim.new(0, 5))
+Elements.addStroke(rjButton, Color3.fromRGB(35, 35, 45), 1)
+rjButton.MouseButton1Click:Connect(TeleportMod.rejoin or function() end)
+
+local spacer2 = Instance.new("Frame", serversTab)
+spacer2.Size = UDim2.new(1, 0, 0, 4)
+spacer2.BackgroundTransparency = 1
+
+local hopButton = Instance.new("TextButton", serversTab)
+hopButton.Size = UDim2.new(0.95, 0, 0, 32)
+hopButton.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+hopButton.TextColor3 = Color3.fromRGB(240, 240, 245)
+hopButton.Font = Enum.Font.GothamBold
+hopButton.TextSize = 12
+hopButton.Text = "SERVER HOP"
+Elements.addCorner(hopButton, UDim.new(0, 5))
+Elements.addStroke(hopButton, Color3.fromRGB(35, 35, 45), 1)
+hopButton.MouseButton1Click:Connect(TeleportMod.serverHop or function() end)
+
+print("🚀 [Ori Dev] ה-Mega Hub מוכן עם הטאבים המלאים והטארגט המשוחזר!")
