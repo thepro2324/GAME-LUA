@@ -1,4 +1,4 @@
--- init.lua (גרסת Mega Hub - כולל כפתור Infinite Zoom מובנה)
+-- init.lua (גרסה חסינת קריסות - מונעת attempt to call a nil value)
 
 local GITHUB_USER = "thepro2324"
 local REPO_NAME   = "GAME-LUA"
@@ -10,12 +10,24 @@ local function import(path)
     end)
     if success and result and result ~= "" then
         local func, err = loadstring(result)
-        if func then return func() end
+        if func then 
+            local runSuccess, runResult = pcall(func)
+            if runSuccess then 
+                return runResult 
+            else
+                warn("🔴 [Ori Dev] שגיאה בהרצת המודול: " .. path .. " -> " .. tostring(runResult))
+            end
+        else
+            warn("🔴 [Ori Dev] שגיאה בקומפילציה של המודול: " .. path .. " -> " .. tostring(err))
+        end
     end
+    return {} -- מחזיר טבלה ריקה במקום nil כדי למנוע קריסה
 end
 
 local Elements = import("ui/elements.lua")
 local Menu = import("ui/menu.lua")
+
+-- הגנה מפני מודולים שלא נטענו
 local PlayerMod    = import("modules/player.lua") or {}
 local VisualsMod   = import("modules/visuals.lua") or {}
 local WorldMod     = import("modules/world.lua") or {}
@@ -23,8 +35,18 @@ local TeleportMod  = import("modules/teleport.lua") or {}
 local TargetMod    = import("modules/target.lua") or {}
 local SettingsMod  = import("modules/settings.lua") or {}
 
-if not Elements or not Menu then 
-    error("🔴 [Ori Dev] שגיאה בטעינת קבצי ה-UI מה-GitHub!")
+-- פונקציות עטיפה בטוחות כדי למנוע קריאה ל-nil value
+local function safeCall(mod, funcName, ...)
+    if mod and mod[funcName] then
+        return mod[funcName](...)
+    end
+end
+
+if not Elements or table. Mackenzie == nil or not Menu or not Menu.init then 
+    -- אם ה-UI הבסיסי לא נטען, ניצור ממשק בסיסי חלופי כדי שלא יקרוס לחלוטין
+    Menu = {init = function() return {createTab = function() return Instance.new("Frame") end, updateTabTitle = function() end} end}
+    Elements = {createToggleButton = function(p) return Instance.new("TextButton", p) end, createSlider = function() end, addCorner = function() end, addStroke = function() end}
+    warn("⚠️ [Ori Dev] קבצי ה-UI הבסיסיים לא נמצאו ב-GitHub, נטען במצב הגנה!")
 end
 
 local MenuInterface = Menu.init(Elements)
@@ -99,7 +121,7 @@ local function updateLanguage(lang)
     if UIReferences.keyLabel then UIReferences.keyLabel.Text = texts.ToggleKeyLabel end
     
     if UIReferences.startButton then
-        if TargetMod.isTeleporting then
+        if TargetMod and TargetMod.isTeleporting then
             UIReferences.startButton.Text = texts.StopTarget
         else
             UIReferences.startButton.Text = texts.StartTarget
@@ -174,10 +196,10 @@ local gh = Instance.new("UIGridLayout", hGrid)
 gh.CellSize = UDim2.new(0.48, 0, 0, 32) 
 gh.CellPadding = UDim2.new(0, 8, 0, 8)
 
-UIReferences.btnAntiAFK = Elements.createToggleButton(hGrid, Localization.EN.AntiAFK, true, PlayerMod.toggleAntiAFK or function() end)
-UIReferences.btnAutoReset = Elements.createToggleButton(hGrid, Localization.EN.AutoReset, false, PlayerMod.toggleAutoReset or function() end)
-UIReferences.btnHideUser = Elements.createToggleButton(hGrid, Localization.EN.HideUser, false, VisualsMod.toggleHideName or function() end)
-UIReferences.btnFPS = Elements.createToggleButton(hGrid, Localization.EN.FPSUnlock, false, WorldMod.toggleFPS or function() end)
+UIReferences.btnAntiAFK = Elements.createToggleButton(hGrid, Localization.EN.AntiAFK, true, function(state) safeCall(PlayerMod, "toggleAntiAFK", state) end)
+UIReferences.btnAutoReset = Elements.createToggleButton(hGrid, Localization.EN.AutoReset, false, function(state) safeCall(PlayerMod, "toggleAutoReset", state) end)
+UIReferences.btnHideUser = Elements.createToggleButton(hGrid, Localization.EN.HideUser, false, function(state) safeCall(VisualsMod, "toggleHideName", state) end)
+UIReferences.btnFPS = Elements.createToggleButton(hGrid, Localization.EN.FPSUnlock, false, function(state) safeCall(WorldMod, "toggleFPS", state) end)
 
 -- ==================== טאב 2: TARGET ====================
 local targetTab = MenuInterface.createTab("Target", 2)
@@ -288,7 +310,7 @@ textBox:GetPropertyChangedSignal("Text"):Connect(function()
 end)
 
 startButton.MouseButton1Click:Connect(function()
-    if not TargetMod.startTargeting then return end
+    if not TargetMod or not TargetMod.startTargeting then return end
     if TargetMod.isTeleporting then
         TargetMod.stopTargeting(startButton)
         startButton.Text = Localization[currentLanguage].StartTarget
@@ -303,22 +325,22 @@ local playerTab = MenuInterface.createTab("Player", 3)
 
 Elements.createSlider(playerTab, "Walk Speed", 16, 2000, 16, function(v) 
     shared.walkSpeedValue = v 
-    if PlayerMod.updateSpeed then PlayerMod.updateSpeed(v) end
+    safeCall(PlayerMod, "updateSpeed", v)
 end)
 
 Elements.createSlider(playerTab, "Jump Power", 50, 1500, 50, function(v) 
     shared.jumpPowerValue = v 
-    if PlayerMod.updateJump then PlayerMod.updateJump(v) end
+    safeCall(PlayerMod, "updateJump", v)
 end)
 
 Elements.createSlider(playerTab, "Fly Speed", 20, 2000, 100, function(v) 
     shared.flySpeed = v 
 end)
 
-Elements.createSlider(playerTab, "Hip Height", 0, 50, 2, function(v) if PlayerMod.updateHipHeight then PlayerMod.updateHipHeight(v) end end)
+Elements.createSlider(playerTab, "Hip Height", 0, 50, 2, function(v) safeCall(PlayerMod, "updateHipHeight", v) end)
 
 local pGrid = Instance.new("Frame", playerTab)
-pGrid.Size = UDim2.new(0.95, 0, 0, 220) -- מותאם כדי להכיל את הכפתור התשיעי בצורה מושלמת
+pGrid.Size = UDim2.new(0.95, 0, 0, 220)
 pGrid.BackgroundTransparency = 1
 
 local g1 = Instance.new("UIGridLayout", pGrid) 
@@ -327,23 +349,20 @@ g1.CellPadding = UDim2.new(0, 8, 0, 8)
 
 Elements.createToggleButton(pGrid, "Fly Mode", false, function(state)
     shared.isFlying = state
-    if PlayerMod.toggleFly then PlayerMod.toggleFly(state) end
+    safeCall(PlayerMod, "toggleFly", state)
 end)
 
-Elements.createToggleButton(pGrid, "Infinite Jump", false, PlayerMod.toggleInfJump or function() end)
-Elements.createToggleButton(pGrid, "Noclip", false, PlayerMod.toggleNoclip or function() end)
-Elements.createToggleButton(pGrid, "Ctrl+Click TP", false, TeleportMod.toggleCtrlClick or function() end)
-Elements.createToggleButton(pGrid, "God Mode", false, PlayerMod.toggleGodMode or function() end)
-Elements.createToggleButton(pGrid, "Invisible", false, PlayerMod.toggleInvisible or function() end)
-Elements.createToggleButton(pGrid, "No Ragdoll", false, PlayerMod.toggleNoRagdoll or function() end)
-Elements.createToggleButton(pGrid, "Auto-Heal", false, PlayerMod.toggleAutoHeal or function() end)
+Elements.createToggleButton(pGrid, "Infinite Jump", false, function(state) safeCall(PlayerMod, "toggleInfJump", state) end)
+Elements.createToggleButton(pGrid, "Noclip", false, function(state) safeCall(PlayerMod, "toggleNoclip", state) end)
+Elements.createToggleButton(pGrid, "Ctrl+Click TP", false, function(state) safeCall(TeleportMod, "toggleCtrlClick", state) end)
+Elements.createToggleButton(pGrid, "God Mode", false, function(state) safeCall(PlayerMod, "toggleGodMode", state) end)
+Elements.createToggleButton(pGrid, "Invisible", false, function(state) safeCall(PlayerMod, "toggleInvisible", state) end)
+Elements.createToggleButton(pGrid, "No Ragdoll", false, function(state) safeCall(PlayerMod, "toggleNoRagdoll", state) end)
+Elements.createToggleButton(pGrid, "Auto-Heal", false, function(state) safeCall(PlayerMod, "toggleAutoHeal", state) end)
 
--- כפתור ה-Zoom האינסופי החדש
 Elements.createToggleButton(pGrid, "Infinite Zoom", false, function(state)
     shared.infiniteZoomActive = state
-    if PlayerMod.toggleInfiniteZoom then 
-        PlayerMod.toggleInfiniteZoom(state) 
-    end
+    safeCall(PlayerMod, "toggleInfiniteZoom", state)
 end)
 
 -- ==================== טאב 4: VISUALS ====================
@@ -356,19 +375,19 @@ local g2 = Instance.new("UIGridLayout", vGrid)
 g2.CellSize = UDim2.new(0.48, 0, 0, 32) 
 g2.CellPadding = UDim2.new(0, 8, 0, 8)
 
-Elements.createToggleButton(vGrid, "Master ESP", false, VisualsMod.toggleMasterESP or function() end)
-Elements.createToggleButton(vGrid, "ESP Box", false, VisualsMod.toggleESPBox or function() end)
-Elements.createToggleButton(vGrid, "ESP Names", false, VisualsMod.toggleESPNames or function() end)
-Elements.createToggleButton(vGrid, "ESP Tracers", false, VisualsMod.toggleTracers or function() end)
-Elements.createToggleButton(vGrid, "Fullbright", false, VisualsMod.toggleFullbright or function() end)
-Elements.createToggleButton(vGrid, "Chams", false, VisualsMod.toggleChams or function() end)
+Elements.createToggleButton(vGrid, "Master ESP", false, function(state) safeCall(VisualsMod, "toggleMasterESP", state) end)
+Elements.createToggleButton(vGrid, "ESP Box", false, function(state) safeCall(VisualsMod, "toggleESPBox", state) end)
+Elements.createToggleButton(vGrid, "ESP Names", false, function(state) safeCall(VisualsMod, "toggleESPNames", state) end)
+Elements.createToggleButton(vGrid, "ESP Tracers", false, function(state) safeCall(VisualsMod, "toggleTracers", state) end)
+Elements.createToggleButton(vGrid, "Fullbright", false, function(state) safeCall(VisualsMod, "toggleFullbright", state) end)
+Elements.createToggleButton(vGrid, "Chams", false, function(state) safeCall(VisualsMod, "toggleChams", state) end)
 
 -- ==================== טאב 5: WORLD ====================
 local worldTab = MenuInterface.createTab("World", 5)
 
-Elements.createSlider(worldTab, "Gravity Level", 0, 400, 196, WorldMod.setGravity or function() end)
-Elements.createSlider(worldTab, "Field of View", 50, 120, 70, WorldMod.setFOV or function() end)
-Elements.createSlider(worldTab, "Time of Day", 0, 24, 12, function(v) if WorldMod.setTime then WorldMod.setTime(v) end end)
+Elements.createSlider(worldTab, "Gravity Level", 0, 400, 196, function(v) safeCall(WorldMod, "setGravity", v) end)
+Elements.createSlider(worldTab, "Field of View", 50, 120, 70, function(v) safeCall(WorldMod, "setFOV", v) end)
+Elements.createSlider(worldTab, "Time of Day", 0, 24, 12, function(v) safeCall(WorldMod, "setTime", v) end)
 
 local wGrid = Instance.new("Frame", worldTab)
 wGrid.Size = UDim2.new(0.95, 0, 0, 80)
@@ -377,9 +396,9 @@ local gw = Instance.new("UIGridLayout", wGrid)
 gw.CellSize = UDim2.new(0.48, 0, 0, 32) 
 gw.CellPadding = UDim2.new(0, 8, 0, 8)
 
-Elements.createToggleButton(wGrid, "Remove Fog", false, WorldMod.toggleFog or function() end)
-Elements.createToggleButton(wGrid, "Freeze World Time", false, WorldMod.toggleFreezeTime or function() end)
-Elements.createToggleButton(wGrid, "Destroy Map Elements", false, WorldMod.destroyMap or function() end)
+Elements.createToggleButton(wGrid, "Remove Fog", false, function(state) safeCall(WorldMod, "toggleFog", state) end)
+Elements.createToggleButton(wGrid, "Freeze World Time", false, function(state) safeCall(WorldMod, "toggleFreezeTime", state) end)
+Elements.createToggleButton(wGrid, "Destroy Map Elements", false, function(state) safeCall(WorldMod, "destroyMap", state) end)
 
 -- ==================== טאב 6: SERVERS ====================
 local serversTab = MenuInterface.createTab("Servers", 6)
@@ -393,7 +412,7 @@ rjButton.TextSize = 12
 rjButton.Text = "QUICK REJOIN"
 Elements.addCorner(rjButton, UDim.new(0, 5))
 Elements.addStroke(rjButton, Color3.fromRGB(35, 35, 45), 1)
-rjButton.MouseButton1Click:Connect(TeleportMod.rejoin or function() end)
+rjButton.MouseButton1Click:Connect(function() safeCall(TeleportMod, "rejoin") end)
 
 local spacer2 = Instance.new("Frame", serversTab)
 spacer2.Size = UDim2.new(1, 0, 0, 4)
@@ -408,7 +427,7 @@ hopButton.TextSize = 12
 hopButton.Text = "SERVER HOP"
 Elements.addCorner(hopButton, UDim.new(0, 5))
 Elements.addStroke(hopButton, Color3.fromRGB(35, 35, 45), 1)
-hopButton.MouseButton1Click:Connect(TeleportMod.serverHop or function() end)
+hopButton.MouseButton1Click:Connect(function() safeCall(TeleportMod, "serverHop") end)
 
 -- ==================== טאב 7: SETTINGS ====================
 local settingsTab = MenuInterface.createTab("Settings", 7)
@@ -442,4 +461,55 @@ for _, theme in ipairs(colors) do
     cBtn.Text = theme.Name
     cBtn.Font = Enum.Font.SourceSansBold
     cBtn.TextSize = 12
-    cBtn.TextColor3 = Color
+    cBtn.TextColor3 = Color3.new(1,1,1)
+    cBtn.BackgroundColor3 = theme.Color
+    Elements.addCorner(cBtn, UDim.new(0, 4))
+    
+    cBtn.MouseButton1Click:Connect(function()
+        safeCall(SettingsMod, "changeTheme", theme.Color, UIReferences.versionLabel)
+    end)
+end
+
+local spaceSettings = Instance.new("Frame", settingsTab)
+spaceSettings.Size = UDim2.new(1, 0, 0, 15)
+spaceSettings.BackgroundTransparency = 1
+
+UIReferences.keyLabel = Instance.new("TextLabel", settingsTab)
+UIReferences.keyLabel.Size = UDim2.new(0.95, 0, 0, 25)
+UIReferences.keyLabel.Text = Localization.EN.ToggleKeyLabel
+UIReferences.keyLabel.TextColor3 = Color3.fromRGB(200, 200, 205)
+UIReferences.keyLabel.Font = Enum.Font.SourceSansBold
+UIReferences.keyLabel.TextSize = 14
+UIReferences.keyLabel.TextXAlignment = Enum.TextXAlignment.Left
+UIReferences.keyLabel.BackgroundTransparency = 1
+
+local keyTextBox = Instance.new("TextBox", settingsTab)
+keyTextBox.Size = UDim2.new(0, 60, 0, 32)
+keyTextBox.Text = "RCTRL"
+keyTextBox.TextColor3 = Color3.fromRGB(30, 215, 96)
+keyTextBox.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+keyTextBox.Font = Enum.Font.SourceSansBold
+keyTextBox.TextSize = 16
+Elements.addCorner(keyTextBox, UDim.new(0, 5))
+Elements.addStroke(keyTextBox, Color3.fromRGB(45, 45, 55), 1)
+
+keyTextBox:GetPropertyChangedSignal("Text"):Connect(function()
+    safeCall(SettingsMod, "setToggleKey", keyTextBox.Text, keyTextBox)
+end)
+
+---------------------------------------------------------
+-- מערכת האזנה למקש פתיחה/סגירה דינמי
+---------------------------------------------------------
+UIS.InputBegan:Connect(function(input, gameProcessed)
+    if input.KeyCode == shared.toggleKey then
+        local mainFrame = MenuInterface.MainFrame
+        if not mainFrame then
+            local coreGui = game:GetService("CoreGui")
+            local gui = coreGui:FindFirstChild("ModernMenuGui") or coreGui:FindFirstChild("ScreenGui")
+            if gui then mainFrame = gui:FindFirstChildOfClass("Frame") end
+        end
+        if mainFrame then mainFrame.Visible = not mainFrame.Visible end
+    end
+end)
+
+print("🚀 [Ori Dev] קובץ init.lua חסין קריסות עודכן בהצלחה!")
