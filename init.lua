@@ -1,8 +1,8 @@
 -- init.lua (הקובץ הראשי שאתה מריץ ב-Executor)
 
 -- הגדרות ה-GitHub שלך - שים פה את הפרטים המדויקים שלך!
-local GITHUB_USER = "YOUR_GITHUB_USERNAME" -- השם משתמש שלך בגיטאהב
-local REPO_NAME   = "YOUR_REPO_NAME"     -- שם הפרויקט (Repository)
+local GITHUB_USER = "thepro2324"
+local REPO_NAME   = "GAME-LUA"
 
 -- פונקציה חכמה שמושכת קבצים מהגיטאהב שלך בזמן אמת
 local function import(path)
