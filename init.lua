@@ -1,6 +1,5 @@
--- init.lua (גרסת Mega Hub - טעינת מודול הגדרות נפרד)
+-- init.lua (גרסת Mega Hub - כולל כפתור Infinite Zoom מובנה)
 
--- הגדרות ה-GitHub שלך
 local GITHUB_USER = "thepro2324"
 local REPO_NAME   = "GAME-LUA"
 
@@ -11,13 +10,10 @@ local function import(path)
     end)
     if success and result and result ~= "" then
         local func, err = loadstring(result)
-        if func then
-            return func()
-        end
+        if func then return func() end
     end
 end
 
--- 1. טעינת רכיבי ה-UI והמודולים
 local Elements = import("ui/elements.lua")
 local Menu = import("ui/menu.lua")
 local PlayerMod    = import("modules/player.lua") or {}
@@ -25,34 +21,28 @@ local VisualsMod   = import("modules/visuals.lua") or {}
 local WorldMod     = import("modules/world.lua") or {}
 local TeleportMod  = import("modules/teleport.lua") or {}
 local TargetMod    = import("modules/target.lua") or {}
-local SettingsMod  = import("modules/settings.lua") or {} -- המודול החדש!
+local SettingsMod  = import("modules/settings.lua") or {}
 
 if not Elements or not Menu then 
     error("🔴 [Ori Dev] שגיאה בטעינת קבצי ה-UI מה-GitHub!")
 end
 
--- אתחול ה-Menu הראשי
 local MenuInterface = Menu.init(Elements)
 
----------------------------------------------------------
--- הגדרות גלובליות
----------------------------------------------------------
 shared.flySpeed = shared.flySpeed or 100
 shared.isFlying = false
+shared.infiniteZoomActive = false
 
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local cam = workspace.CurrentCamera
 local lp = game.Players.LocalPlayer
 
----------------------------------------------------------
--- מערכת תרגום ושפות (עברית / אנגלית)
----------------------------------------------------------
 local currentLanguage = "EN"
 
 local Localization = {
     EN = {
-        Version = "Version: 1.4.0",
+        Version = "Version: 1.5.0",
         Welcome = "Welcome to ori_dev_script mega hub!",
         AntiAFK = "Anti-AFK",
         AutoReset = "Auto-Reset (Low HP)",
@@ -71,7 +61,7 @@ local Localization = {
         ToggleKeyLabel = "Menu Toggle Key (1 Letter):"
     },
     HE = {
-        Version = "גרסה: 1.4.0",
+        Version = "גרסה: 1.5.0",
         Welcome = "ברוך הבא לתוך המגה האב של אורי!",
         AntiAFK = "אנטי AFK",
         AutoReset = "איפוס אוטומטי (חיים נמוכים)",
@@ -127,10 +117,6 @@ local function updateLanguage(lang)
     end)
 end
 
----------------------------------------------------------
--- יצירת הטאבים והאלמנטים
----------------------------------------------------------
-
 -- ==================== טאב 1: HOME ====================
 local homeTab = MenuInterface.createTab("Home", 1)
 
@@ -140,7 +126,6 @@ langContainer.BackgroundTransparency = 1
 
 local enBtn = Instance.new("TextButton", langContainer)
 enBtn.Size = UDim2.new(0.47, 0, 1, 0)
-enBtn.Position = UDim2.new(0, 0, 0, 0)
 enBtn.Text = "🇺🇸 English"
 enBtn.TextColor3 = Color3.fromRGB(240, 240, 245)
 enBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
@@ -194,7 +179,6 @@ UIReferences.btnAutoReset = Elements.createToggleButton(hGrid, Localization.EN.A
 UIReferences.btnHideUser = Elements.createToggleButton(hGrid, Localization.EN.HideUser, false, VisualsMod.toggleHideName or function() end)
 UIReferences.btnFPS = Elements.createToggleButton(hGrid, Localization.EN.FPSUnlock, false, WorldMod.toggleFPS or function() end)
 
-
 -- ==================== טאב 2: TARGET ====================
 local targetTab = MenuInterface.createTab("Target", 2)
 
@@ -203,7 +187,6 @@ textBox.Parent = targetTab
 textBox.Size = UDim2.new(0.9, 0, 0, 35)
 textBox.Position = UDim2.new(0.05, 0, 0, 10)
 textBox.PlaceholderText = Localization.EN.Placeholder
-textBox.Text = ""
 textBox.TextColor3 = Color3.fromRGB(240, 240, 245)
 textBox.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
 textBox.Font = Enum.Font.SourceSans
@@ -249,21 +232,17 @@ textBox:GetPropertyChangedSignal("Text"):Connect(function()
     for _, child in ipairs(searchResultsFrame:GetChildren()) do
         if child:IsA("Frame") or child:IsA("TextButton") then child:Destroy() end
     end
-    
     local text = textBox.Text
     if text == "" then searchResultsFrame.Visible = false return end
-    
     local matches = {}
     for _, p in ipairs(game.Players:GetPlayers()) do
         if p ~= game.Players.LocalPlayer and p.Name:lower():find(text:lower()) then
             table.insert(matches, p.Name)
         end
     end
-    
     if #matches > 0 then
         searchResultsFrame.Visible = true
         searchResultsFrame.CanvasSize = UDim2.new(0, 0, 0, #matches * 32)
-        
         for i, name in ipairs(matches) do
             local itemFrame = Instance.new("Frame")
             itemFrame.Parent = searchResultsFrame
@@ -283,11 +262,7 @@ textBox:GetPropertyChangedSignal("Text"):Connect(function()
             local targetPlrObj = game.Players:FindFirstChild(name)
             if targetPlrObj then
                 pcall(function()
-                    local content, isReady = game.Players:GetUserThumbnailAsync(
-                        targetPlrObj.UserId, 
-                        Enum.ThumbnailType.HeadShot, 
-                        Enum.ThumbnailSize.Size48x48
-                    )
+                    local content = game.Players:GetUserThumbnailAsync(targetPlrObj.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
                     avatarImage.Image = content
                 end)
             end
@@ -302,7 +277,6 @@ textBox:GetPropertyChangedSignal("Text"):Connect(function()
             btn.Font = Enum.Font.SourceSans
             btn.TextSize = 14
             btn.ZIndex = 13
-            
             btn.MouseButton1Click:Connect(function()
                 textBox.Text = name
                 searchResultsFrame.Visible = false
@@ -324,7 +298,6 @@ startButton.MouseButton1Click:Connect(function()
     end
 end)
 
-
 -- ==================== טאב 3: PLAYER ====================
 local playerTab = MenuInterface.createTab("Player", 3)
 
@@ -345,7 +318,7 @@ end)
 Elements.createSlider(playerTab, "Hip Height", 0, 50, 2, function(v) if PlayerMod.updateHipHeight then PlayerMod.updateHipHeight(v) end end)
 
 local pGrid = Instance.new("Frame", playerTab)
-pGrid.Size = UDim2.new(0.95, 0, 0, 180)
+pGrid.Size = UDim2.new(0.95, 0, 0, 220) -- הוגדל מ-180 ל-220 כדי להכיל את כפתור הזום
 pGrid.BackgroundTransparency = 1
 
 local g1 = Instance.new("UIGridLayout", pGrid) 
@@ -365,6 +338,13 @@ Elements.createToggleButton(pGrid, "Invisible", false, PlayerMod.toggleInvisible
 Elements.createToggleButton(pGrid, "No Ragdoll", false, PlayerMod.toggleNoRagdoll or function() end)
 Elements.createToggleButton(pGrid, "Auto-Heal", false, PlayerMod.toggleAutoHeal or function() end)
 
+-- כפתור הזום האינסופי החדש
+Elements.createToggleButton(pGrid, "Infinite Zoom", false, function(state)
+    shared.infiniteZoomActive = state
+    if PlayerMod.toggleInfiniteZoom then 
+        PlayerMod.toggleInfiniteZoom(state) 
+    end
+end)
 
 -- ==================== טאב 4: VISUALS ====================
 local visualsTab = MenuInterface.createTab("Visuals", 4)
@@ -383,7 +363,6 @@ Elements.createToggleButton(vGrid, "ESP Tracers", false, VisualsMod.toggleTracer
 Elements.createToggleButton(vGrid, "Fullbright", false, VisualsMod.toggleFullbright or function() end)
 Elements.createToggleButton(vGrid, "Chams", false, VisualsMod.toggleChams or function() end)
 
-
 -- ==================== טאב 5: WORLD ====================
 local worldTab = MenuInterface.createTab("World", 5)
 
@@ -401,7 +380,6 @@ gw.CellPadding = UDim2.new(0, 8, 0, 8)
 Elements.createToggleButton(wGrid, "Remove Fog", false, WorldMod.toggleFog or function() end)
 Elements.createToggleButton(wGrid, "Freeze World Time", false, WorldMod.toggleFreezeTime or function() end)
 Elements.createToggleButton(wGrid, "Destroy Map Elements", false, WorldMod.destroyMap or function() end)
-
 
 -- ==================== טאב 6: SERVERS ====================
 local serversTab = MenuInterface.createTab("Servers", 6)
@@ -432,11 +410,9 @@ Elements.addCorner(hopButton, UDim.new(0, 5))
 Elements.addStroke(hopButton, Color3.fromRGB(35, 35, 45), 1)
 hopButton.MouseButton1Click:Connect(TeleportMod.serverHop or function() end)
 
-
--- ==================== טאב 7: SETTINGS (מקובץ המודול החדש) ====================
+-- ==================== טאב 7: SETTINGS ====================
 local settingsTab = MenuInterface.createTab("Settings", 7)
 
--- כותרת לבחירת צבעים
 UIReferences.themeLabel = Instance.new("TextLabel", settingsTab)
 UIReferences.themeLabel.Size = UDim2.new(0.95, 0, 0, 25)
 UIReferences.themeLabel.Text = Localization.EN.ThemeSelect
@@ -446,7 +422,6 @@ UIReferences.themeLabel.TextSize = 14
 UIReferences.themeLabel.TextXAlignment = Enum.TextXAlignment.Left
 UIReferences.themeLabel.BackgroundTransparency = 1
 
--- קונטיינר לצבעים
 local colorGrid = Instance.new("Frame", settingsTab)
 colorGrid.Size = UDim2.new(0.95, 0, 0, 40)
 colorGrid.BackgroundTransparency = 1
@@ -473,17 +448,15 @@ for _, theme in ipairs(colors) do
     
     cBtn.MouseButton1Click:Connect(function()
         if SettingsMod.changeTheme then
-            SettingsMod.changeTheme(theme.Color, MenuInterface.MainFrame, UIReferences.versionLabel)
+            SettingsMod.changeTheme(theme.Color, UIReferences.versionLabel)
         end
     end)
 end
 
--- רווח קטן
 local spaceSettings = Instance.new("Frame", settingsTab)
 spaceSettings.Size = UDim2.new(1, 0, 0, 15)
 spaceSettings.BackgroundTransparency = 1
 
--- כותרת לשינוי מקש פתיחה/סגירה
 UIReferences.keyLabel = Instance.new("TextLabel", settingsTab)
 UIReferences.keyLabel.Size = UDim2.new(0.95, 0, 0, 25)
 UIReferences.keyLabel.Text = Localization.EN.ToggleKeyLabel
@@ -493,7 +466,6 @@ UIReferences.keyLabel.TextSize = 14
 UIReferences.keyLabel.TextXAlignment = Enum.TextXAlignment.Left
 UIReferences.keyLabel.BackgroundTransparency = 1
 
--- תיבת טקסט לקבלת אות אחת
 local keyTextBox = Instance.new("TextBox", settingsTab)
 keyTextBox.Size = UDim2.new(0, 60, 0, 32)
 keyTextBox.Text = "RCTRL"
@@ -511,25 +483,18 @@ keyTextBox:GetPropertyChangedSignal("Text"):Connect(function()
 end)
 
 ---------------------------------------------------------
--- מערכת האזנה למקש פתיחה/סגירה דינמי (מתוקן)
+-- מערכת האזנה למקש פתיחה/סגירה דינמי
 ---------------------------------------------------------
 UIS.InputBegan:Connect(function(input, gameProcessed)
-    -- אנחנו מורידים את ה-gameProcessed כדי שזה יעבוד גם אם אתה לוחץ תוך כדי תנועה או צ'אט
     if input.KeyCode == shared.toggleKey then
-        -- מחפש את ה-MainFrame בכל דרך אפשרית כדי לעשות לו Toggle
         local mainFrame = MenuInterface.MainFrame
         if not mainFrame then
             local coreGui = game:GetService("CoreGui")
             local gui = coreGui:FindFirstChild("ModernMenuGui") or coreGui:FindFirstChild("ScreenGui")
-            if gui then
-                mainFrame = gui:FindFirstChildOfClass("Frame")
-            end
+            if gui then mainFrame = gui:FindFirstChildOfClass("Frame") end
         end
-        
-        if mainFrame then
-            mainFrame.Visible = not mainFrame.Visible
-        end
+        if mainFrame then mainFrame.Visible = not mainFrame.Visible end
     end
 end)
 
-print("🚀 [Ori Dev] קובץ init.lua עודכן ומוכן להרצה!")
+print("🚀 [Ori Dev] קובץ init.lua מעודכן לגמרי ומוכן לפעולה!")
