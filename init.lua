@@ -1,4 +1,4 @@
--- init.lua (גרסת ה-Mega Hub המשולבת עם ה-Target המקורי של אורי)
+-- init.lua (גרסת ה-Mega Hub המתקדמת עם ה-AutoComplete והסקינים בטאב Target)
 
 -- הגדרות ה-GitHub שלך
 local GITHUB_USER = "thepro2324"
@@ -30,7 +30,7 @@ if not Elements or not Menu then
     error("🔴 [Ori Dev] שגיאה בטעינת קבצי ה-UI מה-GitHub!")
 end
 
--- אתחול ה-Menu הראשי
+-- אתחול ה-Menu הראשי והמודרני
 local MenuInterface = Menu.init(Elements)
 
 ---------------------------------------------------------
@@ -53,11 +53,10 @@ Elements.createToggleButton(hGrid, "Hide Username", false, VisualsMod.toggleHide
 Elements.createToggleButton(hGrid, "FPS Unlocker", false, WorldMod.toggleFPS or function() end)
 
 
--- ==================== טאב 2: TARGET (העיצוב המקורי המשוחזר שלך!) ====================
--- ==================== טאב 2: TARGET (משודרג עם תמונות סקין) ====================
+-- ==================== טאב 2: TARGET (הטארגט המשודרג בתוך ה-Mega Hub!) ====================
 local targetTab = MenuInterface.createTab("Target", 2)
 
--- יצירת ה-TextBox המקורי שלך
+-- תיבת הטקסט המעוצבת של ה-Mega Hub
 local textBox = Instance.new("TextBox")
 textBox.Parent = targetTab
 textBox.Size = UDim2.new(0.9, 0, 0, 35)
@@ -72,10 +71,10 @@ textBox.ClearTextOnFocus = false
 Elements.addCorner(textBox, UDim.new(0, 6))
 Elements.addStroke(textBox, Color3.fromRGB(45, 45, 55), 1)
 
--- חלון גלילה לתוצאות החיפוש בזמן אמת
+-- חלון גלילה לתוצאות החיפוש (AutoComplete)
 local searchResultsFrame = Instance.new("ScrollingFrame")
 searchResultsFrame.Parent = targetTab
-searchResultsFrame.Size = UDim2.new(0.9, 0, 0, 120) -- הגדלנו מעט כדי שיתאים לאייקונים
+searchResultsFrame.Size = UDim2.new(0.9, 0, 0, 110)
 searchResultsFrame.Position = UDim2.new(0.05, 0, 0, 50)
 searchResultsFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 searchResultsFrame.BorderSizePixel = 0
@@ -87,41 +86,47 @@ Elements.addCorner(searchResultsFrame, UDim.new(0, 6))
 local searchListLayout = Instance.new("UIListLayout")
 searchListLayout.Parent = searchResultsFrame
 searchListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-searchListLayout.Padding = UDim.new(0, 4) -- ריווח נקי בין הכפתורים
+searchListLayout.Padding = UDim.new(0, 4)
 
--- רווח קטן כדי שהחיפוש לא יתנגש בכפתור הסטארט
+-- רווח דינמי כדי למנוע התנגשויות ויזואליות
 local spacer = Instance.new("Frame", targetTab)
-spacer.Size = UDim2.new(1, 0, 0, 135) 
+spacer.Size = UDim2.new(1, 0, 0, 125) 
 spacer.BackgroundTransparency = 1
 
--- כפתור הסטארט/סטופ הגדול והצבעוני שלך
+-- כפתור הסטארט/סטופ הגדול בעיצוב של ה-Mega Hub
 local startButton = Instance.new("TextButton")
 startButton.Parent = targetTab
 startButton.Size = UDim2.new(0.9, 0, 0, 40)
 startButton.Position = UDim2.new(0.05, 0, 0, 0)
 startButton.Text = "Start Targeter"
 startButton.TextColor3 = Color3.new(1, 1, 1)
-startButton.BackgroundColor3 = Color3.new(0.1, 0.5, 0.1)
+startButton.BackgroundColor3 = Color3.fromRGB(30, 130, 40)
 startButton.Font = Enum.Font.SourceSansBold
 startButton.TextSize = 18
 Elements.addCorner(startButton, UDim.new(0, 6))
 
--- חיבור הלוגיקה והחיפוש של ה-Target כולל הוספת תמונת פרופיל
+-- מערכת ה-AutoComplete החכמה עם תמונות הראש (סקינים)
 textBox:GetPropertyChangedSignal("Text"):Connect(function()
-    -- מחיקת התוצאות הקודמות
     for _, child in ipairs(searchResultsFrame:GetChildren()) do
         if child:IsA("Frame") or child:IsA("TextButton") then child:Destroy() end
     end
     
-    if not TargetMod.getMatches then return end
-    local matches = TargetMod.getMatches(textBox.Text)
+    local text = textBox.Text
+    if text == "" then searchResultsFrame.Visible = false return end
+    
+    -- סינון שחקנים לפי האותיות שהוקלדו (למשל O יראה את ORI ו-OR)
+    local matches = {}
+    for _, p in ipairs(game.Players:GetPlayers()) do
+        if p ~= game.Players.LocalPlayer and p.Name:lower():find(text:lower()) then
+            table.insert(matches, p.Name)
+        end
+    end
     
     if #matches > 0 then
         searchResultsFrame.Visible = true
-        searchResultsFrame.CanvasSize = UDim2.new(0, 0, 0, #matches * 32) -- מותאם לגובה הכפתור החדש
+        searchResultsFrame.CanvasSize = UDim2.new(0, 0, 0, #matches * 32)
         
         for i, name in ipairs(matches) do
-            -- פריים מחזיק לכל שחקן ברשימה
             local itemFrame = Instance.new("Frame")
             itemFrame.Parent = searchResultsFrame
             itemFrame.Size = UDim2.new(1, 0, 0, 28)
@@ -130,32 +135,32 @@ textBox:GetPropertyChangedSignal("Text"):Connect(function()
             itemFrame.ZIndex = 11
             Elements.addCorner(itemFrame, UDim.new(0, 4))
             
-            -- תמונת האווטאר (ראש השחקן) מצד שמאל של השם
+            -- לוגו הסקין של השחקן (הראש שלו) מצד שמאל
             local avatarImage = Instance.new("ImageLabel")
             avatarImage.Parent = itemFrame
-            avatarImage.Size = UDim2.new(0, 24, 0, 24)
-            avatarImage.Position = UDim2.new(0, 4, 0.5, -12)
+            avatarImage.Size = UDim2.new(0, 22, 0, 22)
+            avatarImage.Position = UDim2.new(0, 4, 0.5, -11)
             avatarImage.BackgroundTransparency = 1
             avatarImage.ZIndex = 12
             
-            -- השגת האייקון ישירות מרובלוקס לפי ה-UserId
             local targetPlrObj = game.Players:FindFirstChild(name)
             if targetPlrObj then
                 pcall(function()
-                    local thumbType = Enum.ThumbnailType.HeadShot
-                    local thumbSize = Enum.ThumbnailSize.Size48x48
-                    local content, isReady = game.Players:GetUserThumbnailAsync(targetPlrObj.UserId, thumbType, thumbSize)
+                    local content, isReady = game.Players:GetUserThumbnailAsync(
+                        targetPlrObj.UserId, 
+                        Enum.ThumbnailType.HeadShot, 
+                        Enum.ThumbnailSize.Size48x48
+                    )
                     avatarImage.Image = content
                 end)
             end
             
-            -- כפתור שקוף מעל הכל כדי שהלחיצה תעבוד בצורה חלקה
+            -- כפתור שקוף ללחיצה חלקה על השורה
             local btn = Instance.new("TextButton")
             btn.Parent = itemFrame
             btn.Size = UDim2.new(1, 0, 1, 0)
             btn.BackgroundTransparency = 1
-            -- הזזת הטקסט ימינה כדי שלא יעלה על התמונה
-            btn.Text = "      " .. name 
+            btn.Text = "      " .. name -- רווח בשביל שלא יסתיר את האווטאר
             btn.TextColor3 = Color3.new(1, 1, 1)
             btn.TextXAlignment = Enum.TextXAlignment.Left
             btn.Font = Enum.Font.SourceSans
@@ -281,4 +286,4 @@ Elements.addCorner(hopButton, UDim.new(0, 5))
 Elements.addStroke(hopButton, Color3.fromRGB(35, 35, 45), 1)
 hopButton.MouseButton1Click:Connect(TeleportMod.serverHop or function() end)
 
-print("🚀 [Ori Dev] ה-Mega Hub מוכן עם הטאבים המלאים והטארגט המשוחזר!")
+print("🚀 [Ori Dev] ה-Mega Hub המעודכן מוכן עם ה-AutoComplete והסקינים בטאב ה-Target!")
