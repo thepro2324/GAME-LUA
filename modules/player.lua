@@ -1,4 +1,4 @@
--- modules/player.lua (גרסה מלאה - תיקון מקשים: רווח עולה, קונטרול יורד)
+-- modules/player.lua (גרסה מלאה - תיקון סופי: רווח עולה, קונטרול יורד)
 
 local PlayerMod = {}
 
@@ -88,18 +88,18 @@ function PlayerMod.toggleFly(state)
         
         local moveDir = Vector3.new(0, 0, 0)
         
-        -- תנועה אופקית לפי מצלמה
+        -- תנועה אופקית (W, A, S, D)
         if UIS:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
         if UIS:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
         if UIS:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
         if UIS:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
         
-        -- תנועה אנכית (תוקן לבקשתך!)
+        -- תנועה אנכית מדויקת לבקשתך
         if UIS:IsKeyDown(Enum.KeyCode.Space) then
-            moveDir = moveDir + Vector3.new(0, 1, 0) -- רווח רק מעלה
+            moveDir = moveDir + Vector3.new(0, 1, 0) -- רווח מעלה
         end
         if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then
-            moveDir = moveDir - Vector3.new(0, 1, 0) -- קונטרול שמאלי רק מוריד
+            moveDir = moveDir - Vector3.new(0, 1, 0) -- קונטרול מוריד
         end
         
         bodyGyro.CFrame = CFrame.new(hrp.Position, hrp.Position + cam.CFrame.LookVector)
@@ -183,7 +183,6 @@ function PlayerMod.toggleInvisible(state)
     end
 end
 
--- עזרים ריקים או חלקיים למניעת קריסות
 function PlayerMod.toggleNoRagdoll(state) end
 function PlayerMod.toggleAutoHeal(state) end
 
