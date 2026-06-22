@@ -1,4 +1,4 @@
--- init.lua (גרסת ה-Mega Hub עם מערכת החלפת שפה דינמית וגרסה בטאב Home)
+-- init.lua (גרסת ה-Mega Hub עם Fly מבוסס מצלמה + שליטה עם CTRL/Space)
 
 -- הגדרות ה-GitHub שלך
 local GITHUB_USER = "thepro2324"
@@ -33,12 +33,14 @@ end
 -- אתחול ה-Menu הראשי והמודרני
 local MenuInterface = Menu.init(Elements)
 
+-- הגדרת מהירות תעופה כברירת מחדל ב-shared כדי שהמודול ייגש אליה
+shared.flySpeed = shared.flySpeed or 100
+
 ---------------------------------------------------------
 -- מערכת תרגום ושפות (עברית / אנגלית)
 ---------------------------------------------------------
-local currentLanguage = "EN" -- ברירת מחדל אנגלית
+local currentLanguage = "EN"
 
--- מאגר הטקסטים לשתי השפות
 local Localization = {
     EN = {
         Version = "Version: 1.2.0",
@@ -74,14 +76,12 @@ local Localization = {
     }
 }
 
--- טבלאות לשמירת הרפרנסים של האלמנטים כדי שנוכל לעדכן אותם בזמן אמת
 local UIReferences = {}
 
 local function updateLanguage(lang)
     currentLanguage = lang
     local texts = Localization[lang]
     
-    -- עדכון טקסטים בטאב Home
     if UIReferences.welcomeLabel then UIReferences.welcomeLabel.Text = texts.Welcome end
     if UIReferences.versionLabel then UIReferences.versionLabel.Text = texts.Version end
     if UIReferences.btnAntiAFK then UIReferences.btnAntiAFK.Text = texts.AntiAFK end
@@ -89,7 +89,6 @@ local function updateLanguage(lang)
     if UIReferences.btnHideUser then UIReferences.btnHideUser.Text = texts.HideUser end
     if UIReferences.btnFPS then UIReferences.btnFPS.Text = texts.FPSUnlock end
     
-    -- עדכון טקסטים בטאב Target
     if UIReferences.textBox then UIReferences.textBox.PlaceholderText = texts.Placeholder end
     if UIReferences.startButton then
         if TargetMod.isTeleporting then
@@ -99,7 +98,6 @@ local function updateLanguage(lang)
         end
     end
     
-    -- עדכון שמות הטאבים עצמם (במידה והמערכת תומכת בשינוי כותרת הטאב דינמית)
     pcall(function()
         MenuInterface.updateTabTitle(1, lang == "HE" and "בית" or "Home")
         MenuInterface.updateTabTitle(2, texts.TargetTab)
@@ -117,7 +115,6 @@ end
 -- ==================== טאב 1: HOME ====================
 local homeTab = MenuInterface.createTab("Home", 1)
 
--- כפתורי בחירת שפה (עברית / אנגלית) למעלה
 local langContainer = Instance.new("Frame", homeTab)
 langContainer.Size = UDim2.new(0.95, 0, 0, 35)
 langContainer.BackgroundTransparency = 1
@@ -144,7 +141,6 @@ heBtn.TextSize = 14
 Elements.addCorner(heBtn, UDim.new(0, 5))
 heBtn.MouseButton1Click:Connect(function() updateLanguage("HE") end)
 
--- טקסט ברוך הבא + גרסה
 local textContainer = Instance.new("Frame", homeTab)
 textContainer.Size = UDim2.new(0.95, 0, 0, 50)
 textContainer.BackgroundTransparency = 1
@@ -162,12 +158,11 @@ UIReferences.versionLabel = Instance.new("TextLabel", textContainer)
 UIReferences.versionLabel.Size = UDim2.new(1, 0, 0.5, 0)
 UIReferences.versionLabel.Position = UDim2.new(0, 0, 0.5, 5)
 UIReferences.versionLabel.Text = Localization.EN.Version
-UIReferences.versionLabel.TextColor3 = Color3.fromRGB(30, 215, 96) -- צבע ירוק זוהר לגרסה
+UIReferences.versionLabel.TextColor3 = Color3.fromRGB(30, 215, 96)
 UIReferences.versionLabel.Font = Enum.Font.SourceSansBold
 UIReferences.versionLabel.TextSize = 14
 UIReferences.versionLabel.BackgroundTransparency = 1
 
--- גריד כפתורי הפעלה של הבית
 local hGrid = Instance.new("Frame", homeTab)
 hGrid.Size = UDim2.new(0.95, 0, 0, 120)
 hGrid.BackgroundTransparency = 1
@@ -231,7 +226,6 @@ startButton.TextSize = 18
 Elements.addCorner(startButton, UDim.new(0, 6))
 UIReferences.startButton = startButton
 
--- מערכת ה-AutoComplete
 textBox:GetPropertyChangedSignal("Text"):Connect(function()
     for _, child in ipairs(searchResultsFrame:GetChildren()) do
         if child:IsA("Frame") or child:IsA("TextButton") then child:Destroy() end
@@ -325,7 +319,10 @@ Elements.createSlider(playerTab, "Jump Power", 50, 1000, 50, function(v)
     if PlayerMod.updateJump then PlayerMod.updateJump(v) end
 end)
 
-Elements.createSlider(playerTab, "Fly Speed", 20, 500, 100, function(v) shared.flySpeed = v end)
+Elements.createSlider(playerTab, "Fly Speed", 20, 500, 100, function(v) 
+    shared.flySpeed = v 
+end)
+
 Elements.createSlider(playerTab, "Hip Height", 0, 50, 2, function(v) if PlayerMod.updateHipHeight then PlayerMod.updateHipHeight(v) end end)
 
 local pGrid = Instance.new("Frame", playerTab)
@@ -411,4 +408,4 @@ Elements.addCorner(hopButton, UDim.new(0, 5))
 Elements.addStroke(hopButton, Color3.fromRGB(35, 35, 45), 1)
 hopButton.MouseButton1Click:Connect(TeleportMod.serverHop or function() end)
 
-print("🚀 [Ori Dev] מערכת החלפת שפה דינמית וגרסה 1.2.0 עודכנו בהצלחה!")
+print("🚀 [Ori Dev] מערכת ה-Fly שודרגה לעבודה לפי כיוון המצלמה ומקשי CTRL / Space!")
