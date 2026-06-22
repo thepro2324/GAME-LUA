@@ -1,4 +1,4 @@
--- modules/player.lua (גרסה מלאה - תעופה נקייה: רווח עולה, קונטרול יורד)
+-- modules/player.lua (גרסה מלאה - כולל תעופה מתוקנת וזום אינסופי)
 
 local PlayerMod = {}
 
@@ -16,6 +16,10 @@ local noclipConnection = nil
 local infJumpConnection = nil
 local autoResetConnection = nil
 
+-- שמירת ערכי הזום המקוריים של המשחק
+local originalMaxZoom = lp.MaxCameraZoomDistance
+local originalMinZoom = lp.MinCameraZoomDistance
+
 -- הגדרת ערכי ברירת מחדל גלובליים
 shared.walkSpeedValue = shared.walkSpeedValue or 16
 shared.jumpPowerValue = shared.jumpPowerValue or 50
@@ -25,9 +29,7 @@ function PlayerMod.updateSpeed(v)
     local char = lp.Character
     if char then
         local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum then 
-            hum.WalkSpeed = v 
-        end
+        if hum then hum.WalkSpeed = v end
     end
 end
 
@@ -51,13 +53,29 @@ function PlayerMod.updateHipHeight(v)
     end
 end
 
+-- ביטול הגבלת הזום (אינסוף זום)
+function PlayerMod.toggleInfiniteZoom(state)
+    if state then
+        lp.MaxCameraZoomDistance = math.huge
+        lp.MinCameraZoomDistance = 0
+    else
+        lp.MaxCameraZoomDistance = originalMaxZoom or 128
+        lp.MinCameraZoomDistance = originalMinZoom or 0.5
+    end
+end
+
 lp.CharacterAdded:Connect(function(char)
     local hum = char:WaitForChild("Humanoid")
-    task.wait(0.1) -- השהייה קלה לוודא שהדמות נטענה קודם
+    task.wait(0.1)
     if shared.walkSpeedValue then hum.WalkSpeed = shared.walkSpeedValue end
     if shared.jumpPowerValue then 
         hum.UseJumpPower = true
         hum.JumpPower = shared.jumpPowerValue 
+    end
+    -- שמירה על זום אינסופי לאחר ריספאון
+    if shared.infiniteZoomActive then
+        lp.MaxCameraZoomDistance = math.huge
+        lp.MinCameraZoomDistance = 0
     end
     if shared.isFlying then
         task.wait(0.5)
@@ -65,7 +83,7 @@ lp.CharacterAdded:Connect(function(char)
     end
 end)
 
--- ==================== מערכת FLY חלקה ונקייה (בלי התנגשויות מצלמה) ====================
+-- ==================== מערכת FLY חלקה ונקייה ====================
 function PlayerMod.toggleFly(state)
     if flyConnection then flyConnection:Disconnect() flyConnection = nil end
     if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
@@ -102,27 +120,23 @@ function PlayerMod.toggleFly(state)
         local lookVector = cam.CFrame.LookVector
         local rightVector = cam.CFrame.RightVector
         
-        -- נרמול וקטור המצלמה האופקי כדי שלא ישפיע על הגובה (ציר ה-Y תמיד 0 בתנועה קדימה/אחורה)
         local forward = Vector3.new(lookVector.X, 0, lookVector.Z).Unit
         local side = Vector3.new(rightVector.X, 0, rightVector.Z).Unit
         
         local moveDir = Vector3.new(0, 0, 0)
         
-        -- תנועה אופקית נקייה
         if UIS:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + forward end
         if UIS:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - forward end
         if UIS:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + side end
         if UIS:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - side end
         
-        -- תנועה אנכית טהורה ומדויקת בלבד!
         if UIS:IsKeyDown(Enum.KeyCode.Space) then
-            moveDir = moveDir + Vector3.new(0, 1, 0) -- רווח מעלה בלבד
+            moveDir = moveDir + Vector3.new(0, 1, 0)
         end
         if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then
-            moveDir = moveDir - Vector3.new(0, 1, 0) -- קונטרול מוריד בלבד
+            moveDir = moveDir - Vector3.new(0, 1, 0)
         end
         
-        -- שמירה על כיוון הפנים של השחקן לאן שהמצלמה מסתכלת
         bodyGyro.CFrame = CFrame.new(hrp.Position, hrp.Position + Vector3.new(lookVector.X, 0, lookVector.Z))
         
         local speed = shared.flySpeed or 100
