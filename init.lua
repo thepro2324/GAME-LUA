@@ -1,4 +1,4 @@
--- init.lua (גרסת ה-Mega Hub המתקדמת עם ה-AutoComplete והסקינים בטאב Target)
+-- init.lua (גרסת ה-Mega Hub עם מערכת החלפת שפה דינמית וגרסה בטאב Home)
 
 -- הגדרות ה-GitHub שלך
 local GITHUB_USER = "thepro2324"
@@ -34,12 +34,140 @@ end
 local MenuInterface = Menu.init(Elements)
 
 ---------------------------------------------------------
+-- מערכת תרגום ושפות (עברית / אנגלית)
+---------------------------------------------------------
+local currentLanguage = "EN" -- ברירת מחדל אנגלית
+
+-- מאגר הטקסטים לשתי השפות
+local Localization = {
+    EN = {
+        Version = "Version: 1.2.0",
+        Welcome = "Welcome to ori_dev_script mega hub!",
+        AntiAFK = "Anti-AFK",
+        AutoReset = "Auto-Reset (Low HP)",
+        HideUser = "Hide Username",
+        FPSUnlock = "FPS Unlocker",
+        TargetTab = "Target",
+        PlayerTab = "Player",
+        VisualsTab = "Visuals",
+        WorldTab = "World",
+        ServersTab = "Servers",
+        StartTarget = "Start Targeter",
+        StopTarget = "Stop Targeter",
+        Placeholder = "Target Nickname"
+    },
+    HE = {
+        Version = "גרסה: 1.2.0",
+        Welcome = "ברוך הבא לתוך המגה האב של אורי!",
+        AntiAFK = "אנטי AFK",
+        AutoReset = "איפוס אוטומטי (חיים נמוכים)",
+        HideUser = "הסתרת שם משתמש",
+        FPSUnlock = "משחרר FPS",
+        TargetTab = "מטרה",
+        PlayerTab = "שחקן",
+        VisualsTab = "ויזואלס",
+        WorldTab = "עולם",
+        ServersTab = "שרתים",
+        StartTarget = "הפעל טארגטר",
+        StopTarget = "עצור טארגטר",
+        Placeholder = "הקלד כינוי של שחקן"
+    }
+}
+
+-- טבלאות לשמירת הרפרנסים של האלמנטים כדי שנוכל לעדכן אותם בזמן אמת
+local UIReferences = {}
+
+local function updateLanguage(lang)
+    currentLanguage = lang
+    local texts = Localization[lang]
+    
+    -- עדכון טקסטים בטאב Home
+    if UIReferences.welcomeLabel then UIReferences.welcomeLabel.Text = texts.Welcome end
+    if UIReferences.versionLabel then UIReferences.versionLabel.Text = texts.Version end
+    if UIReferences.btnAntiAFK then UIReferences.btnAntiAFK.Text = texts.AntiAFK end
+    if UIReferences.btnAutoReset then UIReferences.btnAutoReset.Text = texts.AutoReset end
+    if UIReferences.btnHideUser then UIReferences.btnHideUser.Text = texts.HideUser end
+    if UIReferences.btnFPS then UIReferences.btnFPS.Text = texts.FPSUnlock end
+    
+    -- עדכון טקסטים בטאב Target
+    if UIReferences.textBox then UIReferences.textBox.PlaceholderText = texts.Placeholder end
+    if UIReferences.startButton then
+        if TargetMod.isTeleporting then
+            UIReferences.startButton.Text = texts.StopTarget
+        else
+            UIReferences.startButton.Text = texts.StartTarget
+        end
+    end
+    
+    -- עדכון שמות הטאבים עצמם (במידה והמערכת תומכת בשינוי כותרת הטאב דינמית)
+    pcall(function()
+        MenuInterface.updateTabTitle(1, lang == "HE" and "בית" or "Home")
+        MenuInterface.updateTabTitle(2, texts.TargetTab)
+        MenuInterface.updateTabTitle(3, texts.PlayerTab)
+        MenuInterface.updateTabTitle(4, texts.VisualsTab)
+        MenuInterface.updateTabTitle(5, texts.WorldTab)
+        MenuInterface.updateTabTitle(6, texts.ServersTab)
+    end)
+end
+
+---------------------------------------------------------
 -- יצירת הטאבים
 ---------------------------------------------------------
 
 -- ==================== טאב 1: HOME ====================
 local homeTab = MenuInterface.createTab("Home", 1)
 
+-- כפתורי בחירת שפה (עברית / אנגלית) למעלה
+local langContainer = Instance.new("Frame", homeTab)
+langContainer.Size = UDim2.new(0.95, 0, 0, 35)
+langContainer.BackgroundTransparency = 1
+
+local enBtn = Instance.new("TextButton", langContainer)
+enBtn.Size = UDim2.new(0.47, 0, 1, 0)
+enBtn.Position = UDim2.new(0, 0, 0, 0)
+enBtn.Text = "🇺🇸 English"
+enBtn.TextColor3 = Color3.fromRGB(240, 240, 245)
+enBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+enBtn.Font = Enum.Font.SourceSansBold
+enBtn.TextSize = 14
+Elements.addCorner(enBtn, UDim.new(0, 5))
+enBtn.MouseButton1Click:Connect(function() updateLanguage("EN") end)
+
+local heBtn = Instance.new("TextButton", langContainer)
+heBtn.Size = UDim2.new(0.47, 0, 1, 0)
+heBtn.Position = UDim2.new(0.53, 0, 0, 0)
+heBtn.Text = "🇮🇱 עברית"
+heBtn.TextColor3 = Color3.fromRGB(240, 240, 245)
+heBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+heBtn.Font = Enum.Font.SourceSansBold
+heBtn.TextSize = 14
+Elements.addCorner(heBtn, UDim.new(0, 5))
+heBtn.MouseButton1Click:Connect(function() updateLanguage("HE") end)
+
+-- טקסט ברוך הבא + גרסה
+local textContainer = Instance.new("Frame", homeTab)
+textContainer.Size = UDim2.new(0.95, 0, 0, 50)
+textContainer.BackgroundTransparency = 1
+
+UIReferences.welcomeLabel = Instance.new("TextLabel", textContainer)
+UIReferences.welcomeLabel.Size = UDim2.new(1, 0, 0.5, 0)
+UIReferences.welcomeLabel.Position = UDim2.new(0, 0, 0, 5)
+UIReferences.welcomeLabel.Text = Localization.EN.Welcome
+UIReferences.welcomeLabel.TextColor3 = Color3.fromRGB(200, 200, 205)
+UIReferences.welcomeLabel.Font = Enum.Font.SourceSansItalic
+UIReferences.welcomeLabel.TextSize = 15
+UIReferences.welcomeLabel.BackgroundTransparency = 1
+
+UIReferences.versionLabel = Instance.new("TextLabel", textContainer)
+UIReferences.versionLabel.Size = UDim2.new(1, 0, 0.5, 0)
+UIReferences.versionLabel.Position = UDim2.new(0, 0, 0.5, 5)
+UIReferences.versionLabel.Text = Localization.EN.Version
+UIReferences.versionLabel.TextColor3 = Color3.fromRGB(30, 215, 96) -- צבע ירוק זוהר לגרסה
+UIReferences.versionLabel.Font = Enum.Font.SourceSansBold
+UIReferences.versionLabel.TextSize = 14
+UIReferences.versionLabel.BackgroundTransparency = 1
+
+-- גריד כפתורי הפעלה של הבית
 local hGrid = Instance.new("Frame", homeTab)
 hGrid.Size = UDim2.new(0.95, 0, 0, 120)
 hGrid.BackgroundTransparency = 1
@@ -47,21 +175,20 @@ local gh = Instance.new("UIGridLayout", hGrid)
 gh.CellSize = UDim2.new(0.48, 0, 0, 32) 
 gh.CellPadding = UDim2.new(0, 8, 0, 8)
 
-Elements.createToggleButton(hGrid, "Anti-AFK", true, PlayerMod.toggleAntiAFK or function() end)
-Elements.createToggleButton(hGrid, "Auto-Reset (Low HP)", false, PlayerMod.toggleAutoReset or function() end)
-Elements.createToggleButton(hGrid, "Hide Username", false, VisualsMod.toggleHideName or function() end)
-Elements.createToggleButton(hGrid, "FPS Unlocker", false, WorldMod.toggleFPS or function() end)
+UIReferences.btnAntiAFK = Elements.createToggleButton(hGrid, Localization.EN.AntiAFK, true, PlayerMod.toggleAntiAFK or function() end)
+UIReferences.btnAutoReset = Elements.createToggleButton(hGrid, Localization.EN.AutoReset, false, PlayerMod.toggleAutoReset or function() end)
+UIReferences.btnHideUser = Elements.createToggleButton(hGrid, Localization.EN.HideUser, false, VisualsMod.toggleHideName or function() end)
+UIReferences.btnFPS = Elements.createToggleButton(hGrid, Localization.EN.FPSUnlock, false, WorldMod.toggleFPS or function() end)
 
 
--- ==================== טאב 2: TARGET (הטארגט המשודרג בתוך ה-Mega Hub!) ====================
+-- ==================== טאב 2: TARGET ====================
 local targetTab = MenuInterface.createTab("Target", 2)
 
--- תיבת הטקסט המעוצבת של ה-Mega Hub
 local textBox = Instance.new("TextBox")
 textBox.Parent = targetTab
 textBox.Size = UDim2.new(0.9, 0, 0, 35)
 textBox.Position = UDim2.new(0.05, 0, 0, 10)
-textBox.PlaceholderText = "Target Nickname"
+textBox.PlaceholderText = Localization.EN.Placeholder
 textBox.Text = ""
 textBox.TextColor3 = Color3.fromRGB(240, 240, 245)
 textBox.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
@@ -70,8 +197,8 @@ textBox.TextSize = 16
 textBox.ClearTextOnFocus = false
 Elements.addCorner(textBox, UDim.new(0, 6))
 Elements.addStroke(textBox, Color3.fromRGB(45, 45, 55), 1)
+UIReferences.textBox = textBox
 
--- חלון גלילה לתוצאות החיפוש (AutoComplete)
 local searchResultsFrame = Instance.new("ScrollingFrame")
 searchResultsFrame.Parent = targetTab
 searchResultsFrame.Size = UDim2.new(0.9, 0, 0, 110)
@@ -88,24 +215,23 @@ searchListLayout.Parent = searchResultsFrame
 searchListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 searchListLayout.Padding = UDim.new(0, 4)
 
--- רווח דינמי כדי למנוע התנגשויות ויזואליות
 local spacer = Instance.new("Frame", targetTab)
 spacer.Size = UDim2.new(1, 0, 0, 125) 
 spacer.BackgroundTransparency = 1
 
--- כפתור הסטארט/סטופ הגדול בעיצוב של ה-Mega Hub
 local startButton = Instance.new("TextButton")
 startButton.Parent = targetTab
 startButton.Size = UDim2.new(0.9, 0, 0, 40)
 startButton.Position = UDim2.new(0.05, 0, 0, 0)
-startButton.Text = "Start Targeter"
+startButton.Text = Localization.EN.StartTarget
 startButton.TextColor3 = Color3.new(1, 1, 1)
 startButton.BackgroundColor3 = Color3.fromRGB(30, 130, 40)
 startButton.Font = Enum.Font.SourceSansBold
 startButton.TextSize = 18
 Elements.addCorner(startButton, UDim.new(0, 6))
+UIReferences.startButton = startButton
 
--- מערכת ה-AutoComplete החכמה עם תמונות הראש (סקינים)
+-- מערכת ה-AutoComplete
 textBox:GetPropertyChangedSignal("Text"):Connect(function()
     for _, child in ipairs(searchResultsFrame:GetChildren()) do
         if child:IsA("Frame") or child:IsA("TextButton") then child:Destroy() end
@@ -114,7 +240,6 @@ textBox:GetPropertyChangedSignal("Text"):Connect(function()
     local text = textBox.Text
     if text == "" then searchResultsFrame.Visible = false return end
     
-    -- סינון שחקנים לפי האותיות שהוקלדו (למשל O יראה את ORI ו-OR)
     local matches = {}
     for _, p in ipairs(game.Players:GetPlayers()) do
         if p ~= game.Players.LocalPlayer and p.Name:lower():find(text:lower()) then
@@ -135,7 +260,6 @@ textBox:GetPropertyChangedSignal("Text"):Connect(function()
             itemFrame.ZIndex = 11
             Elements.addCorner(itemFrame, UDim.new(0, 4))
             
-            -- לוגו הסקין של השחקן (הראש שלו) מצד שמאל
             local avatarImage = Instance.new("ImageLabel")
             avatarImage.Parent = itemFrame
             avatarImage.Size = UDim2.new(0, 22, 0, 22)
@@ -155,12 +279,11 @@ textBox:GetPropertyChangedSignal("Text"):Connect(function()
                 end)
             end
             
-            -- כפתור שקוף ללחיצה חלקה על השורה
             local btn = Instance.new("TextButton")
             btn.Parent = itemFrame
             btn.Size = UDim2.new(1, 0, 1, 0)
             btn.BackgroundTransparency = 1
-            btn.Text = "      " .. name -- רווח בשביל שלא יסתיר את האווטאר
+            btn.Text = "      " .. name
             btn.TextColor3 = Color3.new(1, 1, 1)
             btn.TextXAlignment = Enum.TextXAlignment.Left
             btn.Font = Enum.Font.SourceSans
@@ -181,8 +304,10 @@ startButton.MouseButton1Click:Connect(function()
     if not TargetMod.startTargeting then return end
     if TargetMod.isTeleporting then
         TargetMod.stopTargeting(startButton)
+        startButton.Text = Localization[currentLanguage].StartTarget
     else
         TargetMod.startTargeting(textBox.Text, startButton, searchResultsFrame)
+        startButton.Text = Localization[currentLanguage].StopTarget
     end
 end)
 
@@ -286,4 +411,4 @@ Elements.addCorner(hopButton, UDim.new(0, 5))
 Elements.addStroke(hopButton, Color3.fromRGB(35, 35, 45), 1)
 hopButton.MouseButton1Click:Connect(TeleportMod.serverHop or function() end)
 
-print("🚀 [Ori Dev] ה-Mega Hub המעודכן מוכן עם ה-AutoComplete והסקינים בטאב ה-Target!")
+print("🚀 [Ori Dev] מערכת החלפת שפה דינמית וגרסה 1.2.0 עודכנו בהצלחה!")
