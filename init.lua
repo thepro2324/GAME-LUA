@@ -1,4 +1,4 @@
--- init.lua (גרסת ה-Mega Hub עם תמיכה מלאה ב-Fly מבוסס מצלמה ומשתני תעופה מובנים)
+-- init.lua (גרסת ה-Mega Hub המתוקנת - כל הכפתורים מוצגים + Fly מבוסס מצלמה)
 
 -- הגדרות ה-GitHub שלך
 local GITHUB_USER = "thepro2324"
@@ -39,7 +39,6 @@ local MenuInterface = Menu.init(Elements)
 shared.flySpeed = shared.flySpeed or 100
 shared.isFlying = false
 
--- הגדרת קישורי מקשים ותנועה לפי מצלמה במידה והמודול צריך תמיכה ישירה מה-init
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local cam = workspace.CurrentCamera
@@ -118,7 +117,7 @@ local function updateLanguage(lang)
 end
 
 ---------------------------------------------------------
--- יצירת הטאבים
+-- יצירת הטאבים והאלמנטים
 ---------------------------------------------------------
 
 -- ==================== טאב 1: HOME ====================
@@ -334,12 +333,14 @@ end)
 
 Elements.createSlider(playerTab, "Hip Height", 0, 50, 2, function(v) if PlayerMod.updateHipHeight then PlayerMod.updateHipHeight(v) end end)
 
+-- תיקון: הגדלת הגובה של ה-pGrid ל-180 כדי שכל 8 הכפתורים ייכנסו ולא ייחתכו
 local pGrid = Instance.new("Frame", playerTab)
-pGrid.Size = UDim2.new(0.95, 0, 0, 160)
+pGrid.Size = UDim2.new(0.95, 0, 0, 180)
 pGrid.BackgroundTransparency = 1
+
 local g1 = Instance.new("UIGridLayout", pGrid) 
 g1.CellSize = UDim2.new(0.48, 0, 0, 32) 
-g1. g1.CellPadding = UDim2.new(0, 8, 0, 8)
+g1.CellPadding = UDim2.new(0, 8, 0, 8) -- תוקן ה-g1 הכפול שהיה רשום מקודם
 
 Elements.createToggleButton(pGrid, "Fly Mode", false, function(state)
     shared.isFlying = state
@@ -423,4 +424,4 @@ Elements.addCorner(hopButton, UDim.new(0, 5))
 Elements.addStroke(hopButton, Color3.fromRGB(35, 35, 45), 1)
 hopButton.MouseButton1Click:Connect(TeleportMod.serverHop or function() end)
 
-print("🚀 [Ori Dev] קובץ init.lua עודכן בהצלחה עם הגדרות ה-Fly החדשות!")
+print("🚀 [Ori Dev] קובץ init.lua תוקן ונטען במלואו בהצלחה!")
