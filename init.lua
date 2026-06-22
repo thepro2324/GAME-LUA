@@ -1,10 +1,9 @@
--- init.lua (הקובץ הראשי שמחבר את ה-UI ללוגיקה האמיתית)
+-- init.lua (הקובץ הראשי - גרסת ה-Mega Hub המלאה)
 
 -- הגדרות ה-GitHub שלך
 local GITHUB_USER = "thepro2324"
 local REPO_NAME   = "GAME-LUA"
 
--- פונקציה חלקה להורדת קבצים
 local function import(path)
     local url = "https://raw.githubusercontent.com/" .. GITHUB_USER .. "/" .. REPO_NAME .. "/main/" .. path
     local success, result = pcall(function()
@@ -18,7 +17,7 @@ local function import(path)
     end
 end
 
--- 1. טעינת רכיבי ה-UI והעיצוב
+-- 1. טעינת רכיבי ה-UI
 local Elements = import("ui/elements.lua")
 local Menu = import("ui/menu.lua")
 
@@ -26,26 +25,58 @@ if not Elements or not Menu then
     error("🔴 [Ori Dev] שגיאה בטעינת קבצי ה-UI מה-GitHub!")
 end
 
--- 2. טעינת המודולים האמיתיים מהתיקייה modules (אם קובץ חסר, הוא ישתמש בגיבוי ריק כדי לא לקרוס)
+-- 2. טעינת המודולים (עם גיבוי למניעת קריסות)
 local PlayerMod    = import("modules/player.lua") or {}
 local VisualsMod   = import("modules/visuals.lua") or {}
 local WorldMod     = import("modules/world.lua") or {}
 local TeleportMod  = import("modules/teleport.lua") or {}
+local TargetMod    = import("modules/target.lua") or {}
 
 -- 3. אתחול ה-Menu הראשי
 local MenuInterface = Menu.init(Elements)
 
 ---------------------------------------------------------
--- 4. יצירת הטאבים והכפתורים וחיבורם ללוגיקה
+-- 4. יצירת הטאבים והכפתורים החדשים (גרסה עשירה)
 ---------------------------------------------------------
 
--- טאב 1: HOME
+-- ==================== טאב 1: HOME ====================
 local homeTab = MenuInterface.createTab("Home", 1)
 
--- טאב 2: TARGET
+local hGrid = Instance.new("Frame", homeTab)
+hGrid.Size = UDim2.new(0.95, 0, 0, 120)
+hGrid.BackgroundTransparency = 1
+local gh = Instance.new("UIGridLayout", hGrid) 
+gh.CellSize = UDim2.new(0.48, 0, 0, 32) 
+gh.CellPadding = UDim2.new(0, 8, 0, 8)
+
+Elements.createToggleButton(hGrid, "Anti-AFK", true, PlayerMod.toggleAntiAFK or function() end)
+Elements.createToggleButton(hGrid, "Auto-Reset (Low HP)", false, PlayerMod.toggleAutoReset or function() end)
+Elements.createToggleButton(hGrid, "Hide Username", false, VisualsMod.toggleHideName or function() end)
+Elements.createToggleButton(hGrid, "FPS Unlocker", false, WorldMod.toggleFPS or function() end)
+
+
+-- ==================== טאב 2: TARGET ====================
 local targetTab = MenuInterface.createTab("Target", 2)
 
--- טאב 3: PLAYER (שינוי ערכים בפועל)
+-- סליידרים ומנגנוני טרגט
+Elements.createSlider(targetTab, "Aimbot FOV", 30, 300, 90, function(v) shared.aimbotFOV = v end)
+
+local tGrid = Instance.new("Frame", targetTab)
+tGrid.Size = UDim2.new(0.95, 0, 0, 120)
+tGrid.BackgroundTransparency = 1
+local gt = Instance.new("UIGridLayout", tGrid) 
+gt.CellSize = UDim2.new(0.48, 0, 0, 32) 
+gt.CellPadding = UDim2.new(0, 8, 0, 8)
+
+Elements.createToggleButton(tGrid, "Silent Aim", false, TargetMod.toggleSilentAim or function() end)
+Elements.createToggleButton(tGrid, "Kill Aura", false, TargetMod.toggleKillAura or function() end)
+Elements.createToggleButton(tGrid, "Teleport to Target", false, TargetMod.toggleTPToTarget or function() end)
+Elements.createToggleButton(tGrid, "Loop Kill Target", false, TargetMod.toggleLoopKill or function() end)
+Elements.createToggleButton(tGrid, "Spectate Target", false, TargetMod.toggleSpectate or function() end)
+Elements.createToggleButton(tGrid, "Fling Target", false, TargetMod.toggleFling or function() end)
+
+
+-- ==================== טאב 3: PLAYER ====================
 local playerTab = MenuInterface.createTab("Player", 3)
 
 Elements.createSlider(playerTab, "Walk Speed", 16, 500, 16, function(v) 
@@ -58,12 +89,11 @@ Elements.createSlider(playerTab, "Jump Power", 50, 1000, 50, function(v)
     if PlayerMod.updateJump then PlayerMod.updateJump(v) end
 end)
 
-Elements.createSlider(playerTab, "Fly Speed", 20, 500, 100, function(v) 
-    shared.flySpeed = v 
-end)
+Elements.createSlider(playerTab, "Fly Speed", 20, 500, 100, function(v) shared.flySpeed = v end)
+Elements.createSlider(playerTab, "Hip Height", 0, 50, 2, function(v) if PlayerMod.updateHipHeight then PlayerMod.updateHipHeight(v) end end)
 
 local pGrid = Instance.new("Frame", playerTab)
-pGrid.Size = UDim2.new(0.95, 0, 0, 120)
+pGrid.Size = UDim2.new(0.95, 0, 0, 160)
 pGrid.BackgroundTransparency = 1
 local g1 = Instance.new("UIGridLayout", pGrid) 
 g1.CellSize = UDim2.new(0.48, 0, 0, 32) 
@@ -75,12 +105,15 @@ Elements.createToggleButton(pGrid, "Noclip", false, PlayerMod.toggleNoclip or fu
 Elements.createToggleButton(pGrid, "Ctrl+Click TP", false, TeleportMod.toggleCtrlClick or function() end)
 Elements.createToggleButton(pGrid, "God Mode", false, PlayerMod.toggleGodMode or function() end)
 Elements.createToggleButton(pGrid, "Invisible", false, PlayerMod.toggleInvisible or function() end)
+Elements.createToggleButton(pGrid, "No Ragdoll", false, PlayerMod.toggleNoRagdoll or function() end)
+Elements.createToggleButton(pGrid, "Auto-Heal (If game allows)", false, PlayerMod.toggleAutoHeal or function() end)
 
--- טאב 4: VISUALS
+
+-- ==================== טאב 4: VISUALS ====================
 local visualsTab = MenuInterface.createTab("Visuals", 4)
 
 local vGrid = Instance.new("Frame", visualsTab)
-vGrid.Size = UDim2.new(0.95, 0, 0, 80)
+vGrid.Size = UDim2.new(0.95, 0, 0, 120)
 vGrid.BackgroundTransparency = 1
 local g2 = Instance.new("UIGridLayout", vGrid) 
 g2.CellSize = UDim2.new(0.48, 0, 0, 32) 
@@ -89,14 +122,31 @@ g2.CellPadding = UDim2.new(0, 8, 0, 8)
 Elements.createToggleButton(vGrid, "Master ESP", false, VisualsMod.toggleMasterESP or function() end)
 Elements.createToggleButton(vGrid, "ESP Box", false, VisualsMod.toggleESPBox or function() end)
 Elements.createToggleButton(vGrid, "ESP Names", false, VisualsMod.toggleESPNames or function() end)
+Elements.createToggleButton(vGrid, "ESP Tracers (Lines)", false, VisualsMod.toggleTracers or function() end)
 Elements.createToggleButton(vGrid, "Fullbright", false, VisualsMod.toggleFullbright or function() end)
+Elements.createToggleButton(vGrid, "Chams (Color Fill)", false, VisualsMod.toggleChams or function() end)
 
--- טאב 5: WORLD
+
+-- ==================== טאב 5: WORLD ====================
 local worldTab = MenuInterface.createTab("World", 5)
+
 Elements.createSlider(worldTab, "Gravity Level", 0, 400, 196, WorldMod.setGravity or function() end)
 Elements.createSlider(worldTab, "Field of View", 50, 120, 70, WorldMod.setFOV or function() end)
+Elements.createSlider(worldTab, "Time of Day", 0, 24, 12, function(v) if WorldMod.setTime then WorldMod.setTime(v) end end)
 
--- טאב 6: SERVERS
+local wGrid = Instance.new("Frame", worldTab)
+wGrid.Size = UDim2.new(0.95, 0, 0, 80)
+wGrid.BackgroundTransparency = 1
+local gw = Instance.new("UIGridLayout", wGrid) 
+gw.CellSize = UDim2.new(0.48, 0, 0, 32) 
+gw.CellPadding = UDim2.new(0, 8, 0, 8)
+
+Elements.createToggleButton(wGrid, "Remove Fog", false, WorldMod.toggleFog or function() end)
+Elements.createToggleButton(wGrid, "Freeze World Time", false, WorldMod.toggleFreezeTime or function() end)
+Elements.createToggleButton(wGrid, "Destroy Map Elements", false, WorldMod.destroyMap or function() end)
+
+
+-- ==================== טאב 6: SERVERS ====================
 local serversTab = MenuInterface.createTab("Servers", 6)
 
 local rjButton = Instance.new("TextButton", serversTab)
@@ -125,4 +175,4 @@ Elements.addCorner(hopButton, UDim.new(0, 5))
 Elements.addStroke(hopButton, Color3.fromRGB(35, 35, 45), 1)
 hopButton.MouseButton1Click:Connect(TeleportMod.serverHop or function() end)
 
-print("🚀 [Ori Dev] ה-GUI מחובר ומפעיל את המודולים האמיתיים!")
+print("🚀 [Ori Dev] ה-Mega Hub החדש והעשיר ביותר מוכן לפעולה!")
