@@ -318,7 +318,7 @@ end)
 Elements.createSlider(playerTab, "Hip Height", 0, 50, 2, function(v) if PlayerMod.updateHipHeight then PlayerMod.updateHipHeight(v) end end)
 
 local pGrid = Instance.new("Frame", playerTab)
-pGrid.Size = UDim2.new(0.95, 0, 0, 220) -- הוגדל מ-180 ל-220 כדי להכיל את כפתור הזום
+pGrid.Size = UDim2.new(0.95, 0, 0, 220) -- מותאם כדי להכיל את הכפתור התשיעי בצורה מושלמת
 pGrid.BackgroundTransparency = 1
 
 local g1 = Instance.new("UIGridLayout", pGrid) 
@@ -338,7 +338,7 @@ Elements.createToggleButton(pGrid, "Invisible", false, PlayerMod.toggleInvisible
 Elements.createToggleButton(pGrid, "No Ragdoll", false, PlayerMod.toggleNoRagdoll or function() end)
 Elements.createToggleButton(pGrid, "Auto-Heal", false, PlayerMod.toggleAutoHeal or function() end)
 
--- כפתור הזום האינסופי החדש
+-- כפתור ה-Zoom האינסופי החדש
 Elements.createToggleButton(pGrid, "Infinite Zoom", false, function(state)
     shared.infiniteZoomActive = state
     if PlayerMod.toggleInfiniteZoom then 
@@ -442,59 +442,4 @@ for _, theme in ipairs(colors) do
     cBtn.Text = theme.Name
     cBtn.Font = Enum.Font.SourceSansBold
     cBtn.TextSize = 12
-    cBtn.TextColor3 = Color3.new(1,1,1)
-    cBtn.BackgroundColor3 = theme.Color
-    Elements.addCorner(cBtn, UDim.new(0, 4))
-    
-    cBtn.MouseButton1Click:Connect(function()
-        if SettingsMod.changeTheme then
-            SettingsMod.changeTheme(theme.Color, UIReferences.versionLabel)
-        end
-    end)
-end
-
-local spaceSettings = Instance.new("Frame", settingsTab)
-spaceSettings.Size = UDim2.new(1, 0, 0, 15)
-spaceSettings.BackgroundTransparency = 1
-
-UIReferences.keyLabel = Instance.new("TextLabel", settingsTab)
-UIReferences.keyLabel.Size = UDim2.new(0.95, 0, 0, 25)
-UIReferences.keyLabel.Text = Localization.EN.ToggleKeyLabel
-UIReferences.keyLabel.TextColor3 = Color3.fromRGB(200, 200, 205)
-UIReferences.keyLabel.Font = Enum.Font.SourceSansBold
-UIReferences.keyLabel.TextSize = 14
-UIReferences.keyLabel.TextXAlignment = Enum.TextXAlignment.Left
-UIReferences.keyLabel.BackgroundTransparency = 1
-
-local keyTextBox = Instance.new("TextBox", settingsTab)
-keyTextBox.Size = UDim2.new(0, 60, 0, 32)
-keyTextBox.Text = "RCTRL"
-keyTextBox.TextColor3 = Color3.fromRGB(30, 215, 96)
-keyTextBox.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
-keyTextBox.Font = Enum.Font.SourceSansBold
-keyTextBox.TextSize = 16
-Elements.addCorner(keyTextBox, UDim.new(0, 5))
-Elements.addStroke(keyTextBox, Color3.fromRGB(45, 45, 55), 1)
-
-keyTextBox:GetPropertyChangedSignal("Text"):Connect(function()
-    if SettingsMod.setToggleKey then
-        SettingsMod.setToggleKey(keyTextBox.Text, keyTextBox)
-    end
-end)
-
----------------------------------------------------------
--- מערכת האזנה למקש פתיחה/סגירה דינמי
----------------------------------------------------------
-UIS.InputBegan:Connect(function(input, gameProcessed)
-    if input.KeyCode == shared.toggleKey then
-        local mainFrame = MenuInterface.MainFrame
-        if not mainFrame then
-            local coreGui = game:GetService("CoreGui")
-            local gui = coreGui:FindFirstChild("ModernMenuGui") or coreGui:FindFirstChild("ScreenGui")
-            if gui then mainFrame = gui:FindFirstChildOfClass("Frame") end
-        end
-        if mainFrame then mainFrame.Visible = not mainFrame.Visible end
-    end
-end)
-
-print("🚀 [Ori Dev] קובץ init.lua מעודכן לגמרי ומוכן לפעולה!")
+    cBtn.TextColor3 = Color
