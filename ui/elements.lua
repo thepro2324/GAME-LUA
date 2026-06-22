@@ -109,4 +109,26 @@ function Elements.createSlider(parent, text, min, max, default, callback)
     end)
 end
 
+-- פונקציה חדשה ליצירת תיבת טקסט עבור בחירת שחקן
+function Elements.createTextBox(parent, placeholder, callback)
+    local textBox = Instance.new("TextBox")
+    textBox.Size = UDim2.new(0.95, 0, 0, 35)
+    textBox.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+    textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textBox.PlaceholderText = placeholder or "Enter Player Name..."
+    textBox.PlaceholderColor3 = Color3.fromRGB(100, 100, 110)
+    textBox.Font = Enum.Font.GothamBold
+    textBox.TextSize = 12
+    textBox.Text = ""
+    Elements.addCorner(textBox, UDim.new(0, 5))
+    Elements.addStroke(textBox, Color3.fromRGB(45, 45, 55), 1)
+    
+    textBox.FocusLost:Connect(function(enterPressed)
+        callback(textBox.Text)
+    end)
+    
+    textBox.Parent = parent
+    return textBox
+end
+
 return Elements
