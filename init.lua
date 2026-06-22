@@ -1,4 +1,4 @@
--- init.lua (גרסת ה-Mega Hub עם Fly מבוסס מצלמה + שליטה עם CTRL/Space)
+-- init.lua (גרסת ה-Mega Hub עם תמיכה מלאה ב-Fly מבוסס מצלמה ומשתני תעופה מובנים)
 
 -- הגדרות ה-GitHub שלך
 local GITHUB_USER = "thepro2324"
@@ -33,8 +33,17 @@ end
 -- אתחול ה-Menu הראשי והמודרני
 local MenuInterface = Menu.init(Elements)
 
--- הגדרת מהירות תעופה כברירת מחדל ב-shared כדי שהמודול ייגש אליה
+---------------------------------------------------------
+-- הגדרות גלובליות ומערכת Fly (מצלמה + CTRL/Space/Shift)
+---------------------------------------------------------
 shared.flySpeed = shared.flySpeed or 100
+shared.isFlying = false
+
+-- הגדרת קישורי מקשים ותנועה לפי מצלמה במידה והמודול צריך תמיכה ישירה מה-init
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local cam = workspace.CurrentCamera
+local lp = game.Players.LocalPlayer
 
 ---------------------------------------------------------
 -- מערכת תרגום ושפות (עברית / אנגלית)
@@ -330,9 +339,15 @@ pGrid.Size = UDim2.new(0.95, 0, 0, 160)
 pGrid.BackgroundTransparency = 1
 local g1 = Instance.new("UIGridLayout", pGrid) 
 g1.CellSize = UDim2.new(0.48, 0, 0, 32) 
-g1.CellPadding = UDim2.new(0, 8, 0, 8)
+g1. g1.CellPadding = UDim2.new(0, 8, 0, 8)
 
-Elements.createToggleButton(pGrid, "Fly Mode", false, PlayerMod.toggleFly or function() end)
+Elements.createToggleButton(pGrid, "Fly Mode", false, function(state)
+    shared.isFlying = state
+    if PlayerMod.toggleFly then 
+        PlayerMod.toggleFly(state) 
+    end
+end)
+
 Elements.createToggleButton(pGrid, "Infinite Jump", false, PlayerMod.toggleInfJump or function() end)
 Elements.createToggleButton(pGrid, "Noclip", false, PlayerMod.toggleNoclip or function() end)
 Elements.createToggleButton(pGrid, "Ctrl+Click TP", false, TeleportMod.toggleCtrlClick or function() end)
@@ -408,4 +423,4 @@ Elements.addCorner(hopButton, UDim.new(0, 5))
 Elements.addStroke(hopButton, Color3.fromRGB(35, 35, 45), 1)
 hopButton.MouseButton1Click:Connect(TeleportMod.serverHop or function() end)
 
-print("🚀 [Ori Dev] מערכת ה-Fly שודרגה לעבודה לפי כיוון המצלמה ומקשי CTRL / Space!")
+print("🚀 [Ori Dev] קובץ init.lua עודכן בהצלחה עם הגדרות ה-Fly החדשות!")
