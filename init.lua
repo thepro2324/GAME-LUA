@@ -54,9 +54,10 @@ Elements.createToggleButton(hGrid, "FPS Unlocker", false, WorldMod.toggleFPS or 
 
 
 -- ==================== טאב 2: TARGET (העיצוב המקורי המשוחזר שלך!) ====================
+-- ==================== טאב 2: TARGET (משודרג עם תמונות סקין) ====================
 local targetTab = MenuInterface.createTab("Target", 2)
 
--- יצירת ה-TextBox המקורי שלך בתוך הטאב
+-- יצירת ה-TextBox המקורי שלך
 local textBox = Instance.new("TextBox")
 textBox.Parent = targetTab
 textBox.Size = UDim2.new(0.9, 0, 0, 35)
@@ -74,7 +75,7 @@ Elements.addStroke(textBox, Color3.fromRGB(45, 45, 55), 1)
 -- חלון גלילה לתוצאות החיפוש בזמן אמת
 local searchResultsFrame = Instance.new("ScrollingFrame")
 searchResultsFrame.Parent = targetTab
-searchResultsFrame.Size = UDim2.new(0.9, 0, 0, 100)
+searchResultsFrame.Size = UDim2.new(0.9, 0, 0, 120) -- הגדלנו מעט כדי שיתאים לאייקונים
 searchResultsFrame.Position = UDim2.new(0.05, 0, 0, 50)
 searchResultsFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 searchResultsFrame.BorderSizePixel = 0
@@ -86,11 +87,11 @@ Elements.addCorner(searchResultsFrame, UDim.new(0, 6))
 local searchListLayout = Instance.new("UIListLayout")
 searchListLayout.Parent = searchResultsFrame
 searchListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-searchListLayout.Padding = UDim.new(0, 2)
+searchListLayout.Padding = UDim.new(0, 4) -- ריווח נקי בין הכפתורים
 
--- רווח קטן
+-- רווח קטן כדי שהחיפוש לא יתנגש בכפתור הסטארט
 local spacer = Instance.new("Frame", targetTab)
-spacer.Size = UDim2.new(1, 0, 0, 115) -- נותן מקום לחיפוש שלא יתנגש
+spacer.Size = UDim2.new(1, 0, 0, 135) 
 spacer.BackgroundTransparency = 1
 
 -- כפתור הסטארט/סטופ הגדול והצבעוני שלך
@@ -105,30 +106,61 @@ startButton.Font = Enum.Font.SourceSansBold
 startButton.TextSize = 18
 Elements.addCorner(startButton, UDim.new(0, 6))
 
--- חיבור הלוגיקה והחיפוש של ה-Target
+-- חיבור הלוגיקה והחיפוש של ה-Target כולל הוספת תמונת פרופיל
 textBox:GetPropertyChangedSignal("Text"):Connect(function()
+    -- מחיקת התוצאות הקודמות
     for _, child in ipairs(searchResultsFrame:GetChildren()) do
-        if child:IsA("TextButton") then child:Destroy() end
+        if child:IsA("Frame") or child:IsA("TextButton") then child:Destroy() end
     end
+    
     if not TargetMod.getMatches then return end
     local matches = TargetMod.getMatches(textBox.Text)
     
     if #matches > 0 then
         searchResultsFrame.Visible = true
-        searchResultsFrame.CanvasSize = UDim2.new(0, 0, 0, #matches * 25)
+        searchResultsFrame.CanvasSize = UDim2.new(0, 0, 0, #matches * 32) -- מותאם לגובה הכפתור החדש
+        
         for i, name in ipairs(matches) do
+            -- פריים מחזיק לכל שחקן ברשימה
+            local itemFrame = Instance.new("Frame")
+            itemFrame.Parent = searchResultsFrame
+            itemFrame.Size = UDim2.new(1, 0, 0, 28)
+            itemFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+            itemFrame.BorderSizePixel = 0
+            itemFrame.ZIndex = 11
+            Elements.addCorner(itemFrame, UDim.new(0, 4))
+            
+            -- תמונת האווטאר (ראש השחקן) מצד שמאל של השם
+            local avatarImage = Instance.new("ImageLabel")
+            avatarImage.Parent = itemFrame
+            avatarImage.Size = UDim2.new(0, 24, 0, 24)
+            avatarImage.Position = UDim2.new(0, 4, 0.5, -12)
+            avatarImage.BackgroundTransparency = 1
+            avatarImage.ZIndex = 12
+            
+            -- השגת האייקון ישירות מרובלוקס לפי ה-UserId
+            local targetPlrObj = game.Players:FindFirstChild(name)
+            if targetPlrObj then
+                pcall(function()
+                    local thumbType = Enum.ThumbnailType.HeadShot
+                    local thumbSize = Enum.ThumbnailSize.Size48x48
+                    local content, isReady = game.Players:GetUserThumbnailAsync(targetPlrObj.UserId, thumbType, thumbSize)
+                    avatarImage.Image = content
+                end)
+            end
+            
+            -- כפתור שקוף מעל הכל כדי שהלחיצה תעבוד בצורה חלקה
             local btn = Instance.new("TextButton")
-            btn.Parent = searchResultsFrame
-            btn.Size = UDim2.new(1, 0, 0, 23)
-            btn.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-            btn.BorderSizePixel = 0
-            btn.Text = "  " .. name
+            btn.Parent = itemFrame
+            btn.Size = UDim2.new(1, 0, 1, 0)
+            btn.BackgroundTransparency = 1
+            -- הזזת הטקסט ימינה כדי שלא יעלה על התמונה
+            btn.Text = "      " .. name 
             btn.TextColor3 = Color3.new(1, 1, 1)
             btn.TextXAlignment = Enum.TextXAlignment.Left
             btn.Font = Enum.Font.SourceSans
             btn.TextSize = 14
-            btn.ZIndex = 11
-            Elements.addCorner(btn, UDim.new(0, 4))
+            btn.ZIndex = 13
             
             btn.MouseButton1Click:Connect(function()
                 textBox.Text = name
