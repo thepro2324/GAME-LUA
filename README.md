@@ -1,1 +1,1 @@
-# GAME-LUA
+# SCRIPT
