@@ -1,4 +1,3 @@
--- ui/elements.lua
 local Elements = {}
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
