@@ -1,4 +1,4 @@
--- init.lua (גרסת ה-Mega Hub המתוקנת - ערכי מקסימום משודרגים לסליידרים)
+-- init.lua (גרסת Mega Hub - טעינת מודול הגדרות נפרד)
 
 -- הגדרות ה-GitHub שלך
 local GITHUB_USER = "thepro2324"
@@ -25,16 +25,17 @@ local VisualsMod   = import("modules/visuals.lua") or {}
 local WorldMod     = import("modules/world.lua") or {}
 local TeleportMod  = import("modules/teleport.lua") or {}
 local TargetMod    = import("modules/target.lua") or {}
+local SettingsMod  = import("modules/settings.lua") or {} -- המודול החדש!
 
 if not Elements or not Menu then 
     error("🔴 [Ori Dev] שגיאה בטעינת קבצי ה-UI מה-GitHub!")
 end
 
--- אתחול ה-Menu הראשי והמודרני
+-- אתחול ה-Menu הראשי
 local MenuInterface = Menu.init(Elements)
 
 ---------------------------------------------------------
--- הגדרות גלובליות ומערכת Fly (מצלמה + Space עולה / CTRL יורד)
+-- הגדרות גלובליות
 ---------------------------------------------------------
 shared.flySpeed = shared.flySpeed or 100
 shared.isFlying = false
@@ -51,7 +52,7 @@ local currentLanguage = "EN"
 
 local Localization = {
     EN = {
-        Version = "Version: 1.2.0",
+        Version = "Version: 1.4.0",
         Welcome = "Welcome to ori_dev_script mega hub!",
         AntiAFK = "Anti-AFK",
         AutoReset = "Auto-Reset (Low HP)",
@@ -62,12 +63,15 @@ local Localization = {
         VisualsTab = "Visuals",
         WorldTab = "World",
         ServersTab = "Servers",
+        SettingsTab = "Settings",
         StartTarget = "Start Targeter",
         StopTarget = "Stop Targeter",
-        Placeholder = "Target Nickname"
+        Placeholder = "Target Nickname",
+        ThemeSelect = "Select Menu Theme Color:",
+        ToggleKeyLabel = "Menu Toggle Key (1 Letter):"
     },
     HE = {
-        Version = "גרסה: 1.2.0",
+        Version = "גרסה: 1.4.0",
         Welcome = "ברוך הבא לתוך המגה האב של אורי!",
         AntiAFK = "אנטי AFK",
         AutoReset = "איפוס אוטומטי (חיים נמוכים)",
@@ -78,9 +82,12 @@ local Localization = {
         VisualsTab = "ויזואלס",
         WorldTab = "עולם",
         ServersTab = "שרתים",
+        SettingsTab = "הגדרות",
         StartTarget = "הפעל טארגטר",
         StopTarget = "עצור טארגטר",
-        Placeholder = "הקלד כינוי של שחקן"
+        Placeholder = "הקלד כינוי של שחקן",
+        ThemeSelect = "בחר צבע נושא לתפריט:",
+        ToggleKeyLabel = "מקש פתיחה/סגירה (אות אחת):"
     }
 }
 
@@ -98,6 +105,9 @@ local function updateLanguage(lang)
     if UIReferences.btnFPS then UIReferences.btnFPS.Text = texts.FPSUnlock end
     
     if UIReferences.textBox then UIReferences.textBox.PlaceholderText = texts.Placeholder end
+    if UIReferences.themeLabel then UIReferences.themeLabel.Text = texts.ThemeSelect end
+    if UIReferences.keyLabel then UIReferences.keyLabel.Text = texts.ToggleKeyLabel end
+    
     if UIReferences.startButton then
         if TargetMod.isTeleporting then
             UIReferences.startButton.Text = texts.StopTarget
@@ -113,6 +123,7 @@ local function updateLanguage(lang)
         MenuInterface.updateTabTitle(4, texts.VisualsTab)
         MenuInterface.updateTabTitle(5, texts.WorldTab)
         MenuInterface.updateTabTitle(6, texts.ServersTab)
+        MenuInterface.updateTabTitle(7, texts.SettingsTab)
     end)
 end
 
@@ -314,22 +325,19 @@ startButton.MouseButton1Click:Connect(function()
 end)
 
 
--- ==================== טאב 3: PLAYER (תוקנו ערכי המקסימום!) ====================
+-- ==================== טאב 3: PLAYER ====================
 local playerTab = MenuInterface.createTab("Player", 3)
 
--- מהירות הליכה: מקסימום 2000
 Elements.createSlider(playerTab, "Walk Speed", 16, 2000, 16, function(v) 
     shared.walkSpeedValue = v 
     if PlayerMod.updateSpeed then PlayerMod.updateSpeed(v) end
 end)
 
--- כוח קפיצה: מקסימום 1500
 Elements.createSlider(playerTab, "Jump Power", 50, 1500, 50, function(v) 
     shared.jumpPowerValue = v 
     if PlayerMod.updateJump then PlayerMod.updateJump(v) end
 end)
 
--- מהירות תעופה: מקסימום 2000
 Elements.createSlider(playerTab, "Fly Speed", 20, 2000, 100, function(v) 
     shared.flySpeed = v 
 end)
@@ -346,9 +354,7 @@ g1.CellPadding = UDim2.new(0, 8, 0, 8)
 
 Elements.createToggleButton(pGrid, "Fly Mode", false, function(state)
     shared.isFlying = state
-    if PlayerMod.toggleFly then 
-        PlayerMod.toggleFly(state) 
-    end
+    if PlayerMod.toggleFly then PlayerMod.toggleFly(state) end
 end)
 
 Elements.createToggleButton(pGrid, "Infinite Jump", false, PlayerMod.toggleInfJump or function() end)
@@ -426,4 +432,94 @@ Elements.addCorner(hopButton, UDim.new(0, 5))
 Elements.addStroke(hopButton, Color3.fromRGB(35, 35, 45), 1)
 hopButton.MouseButton1Click:Connect(TeleportMod.serverHop or function() end)
 
-print("🚀 [Ori Dev] קובץ init.lua תוקן וערכי המקסימום עודכנו!")
+
+-- ==================== טאב 7: SETTINGS (מקובץ המודול החדש) ====================
+local settingsTab = MenuInterface.createTab("Settings", 7)
+
+-- כותרת לבחירת צבעים
+UIReferences.themeLabel = Instance.new("TextLabel", settingsTab)
+UIReferences.themeLabel.Size = UDim2.new(0.95, 0, 0, 25)
+UIReferences.themeLabel.Text = Localization.EN.ThemeSelect
+UIReferences.themeLabel.TextColor3 = Color3.fromRGB(200, 200, 205)
+UIReferences.themeLabel.Font = Enum.Font.SourceSansBold
+UIReferences.themeLabel.TextSize = 14
+UIReferences.themeLabel.TextXAlignment = Enum.TextXAlignment.Left
+UIReferences.themeLabel.BackgroundTransparency = 1
+
+-- קונטיינר לצבעים
+local colorGrid = Instance.new("Frame", settingsTab)
+colorGrid.Size = UDim2.new(0.95, 0, 0, 40)
+colorGrid.BackgroundTransparency = 1
+local clayout = Instance.new("UIListLayout", colorGrid)
+clayout.FillDirection = Enum.FillDirection.Horizontal
+clayout.Padding = UDim.new(0, 6)
+
+local colors = {
+    {Name = "Green", Color = Color3.fromRGB(30, 215, 96)},
+    {Name = "Blue", Color = Color3.fromRGB(30, 144, 255)},
+    {Name = "Red", Color = Color3.fromRGB(255, 75, 75)},
+    {Name = "Purple", Color = Color3.fromRGB(155, 89, 182)}
+}
+
+for _, theme in ipairs(colors) do
+    local cBtn = Instance.new("TextButton", colorGrid)
+    cBtn.Size = UDim2.new(0, 55, 0, 26)
+    cBtn.Text = theme.Name
+    cBtn.Font = Enum.Font.SourceSansBold
+    cBtn.TextSize = 12
+    cBtn.TextColor3 = Color3.new(1,1,1)
+    cBtn.BackgroundColor3 = theme.Color
+    Elements.addCorner(cBtn, UDim.new(0, 4))
+    
+    cBtn.MouseButton1Click:Connect(function()
+        if SettingsMod.changeTheme then
+            SettingsMod.changeTheme(theme.Color, MenuInterface.MainFrame, UIReferences.versionLabel)
+        end
+    end)
+end
+
+-- רווח קטן
+local spaceSettings = Instance.new("Frame", settingsTab)
+spaceSettings.Size = UDim2.new(1, 0, 0, 15)
+spaceSettings.BackgroundTransparency = 1
+
+-- כותרת לשינוי מקש פתיחה/סגירה
+UIReferences.keyLabel = Instance.new("TextLabel", settingsTab)
+UIReferences.keyLabel.Size = UDim2.new(0.95, 0, 0, 25)
+UIReferences.keyLabel.Text = Localization.EN.ToggleKeyLabel
+UIReferences.keyLabel.TextColor3 = Color3.fromRGB(200, 200, 205)
+UIReferences.keyLabel.Font = Enum.Font.SourceSansBold
+UIReferences.keyLabel.TextSize = 14
+UIReferences.keyLabel.TextXAlignment = Enum.TextXAlignment.Left
+UIReferences.keyLabel.BackgroundTransparency = 1
+
+-- תיבת טקסט לקבלת אות אחת
+local keyTextBox = Instance.new("TextBox", settingsTab)
+keyTextBox.Size = UDim2.new(0, 60, 0, 32)
+keyTextBox.Text = "RCTRL"
+keyTextBox.TextColor3 = Color3.fromRGB(30, 215, 96)
+keyTextBox.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+keyTextBox.Font = Enum.Font.SourceSansBold
+keyTextBox.TextSize = 16
+Elements.addCorner(keyTextBox, UDim.new(0, 5))
+Elements.addStroke(keyTextBox, Color3.fromRGB(45, 45, 55), 1)
+
+keyTextBox:GetPropertyChangedSignal("Text"):Connect(function()
+    if SettingsMod.setToggleKey then
+        SettingsMod.setToggleKey(keyTextBox.Text, keyTextBox)
+    end
+end)
+
+---------------------------------------------------------
+-- מערכת האזנה למקש פתיחה/סגירה דינמי
+---------------------------------------------------------
+UIS.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == shared.toggleKey then
+        if MenuInterface.MainFrame then
+            MenuInterface.MainFrame.Visible = not MenuInterface.MainFrame.Visible
+        end
+    end
+end)
+
+print("🚀 [Ori Dev] קובץ init.lua עודכן וטעון את מודול ה-Settings בהצלחה!")
