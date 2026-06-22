@@ -511,15 +511,25 @@ keyTextBox:GetPropertyChangedSignal("Text"):Connect(function()
 end)
 
 ---------------------------------------------------------
--- מערכת האזנה למקש פתיחה/סגירה דינמי
+-- מערכת האזנה למקש פתיחה/סגירה דינמי (מתוקן)
 ---------------------------------------------------------
 UIS.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
+    -- אנחנו מורידים את ה-gameProcessed כדי שזה יעבוד גם אם אתה לוחץ תוך כדי תנועה או צ'אט
     if input.KeyCode == shared.toggleKey then
-        if MenuInterface.MainFrame then
-            MenuInterface.MainFrame.Visible = not MenuInterface.MainFrame.Visible
+        -- מחפש את ה-MainFrame בכל דרך אפשרית כדי לעשות לו Toggle
+        local mainFrame = MenuInterface.MainFrame
+        if not mainFrame then
+            local coreGui = game:GetService("CoreGui")
+            local gui = coreGui:FindFirstChild("ModernMenuGui") or coreGui:FindFirstChild("ScreenGui")
+            if gui then
+                mainFrame = gui:FindFirstChildOfClass("Frame")
+            end
+        end
+        
+        if mainFrame then
+            mainFrame.Visible = not mainFrame.Visible
         end
     end
 end)
 
-print("🚀 [Ori Dev] קובץ init.lua עודכן וטעון את מודול ה-Settings בהצלחה!")
+print("🚀 [Ori Dev] קובץ init.lua עודכן ומוכן להרצה!")
