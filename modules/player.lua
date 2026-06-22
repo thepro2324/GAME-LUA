@@ -1,149 +1,178 @@
 -- modules/player.lua
 local PlayerMod = {}
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
 
-local playerObj = Players.LocalPlayer
-local camera = workspace.CurrentCamera
+local player = Players.LocalPlayer
 
--- משתני לוגיקה משותפים
-shared.walkSpeedValue = 16
-shared.jumpPowerValue = 50
-shared.flySpeed = 100
+-- משתני עזר גלובליים/שותפים
+shared.walkSpeedValue = shared.walkSpeedValue or 16
+shared.jumpPowerValue = shared.jumpPowerValue or 50
+shared.flySpeed = shared.flySpeed or 100
 
-_G.Fly_Enabled = false
-_G.Noclip_Enabled = false
-_G.InfJump_Enabled = false
-_G.GodMode_Enabled = false
+local flyLoop, noclipLoop, jumpConnection
+local isFlying = false
+local isNoclip = false
+local isInfJump = false
 
--- 1. מערכת תעופה (Fly Mode)
-local flyBv, flyBg
-function PlayerMod.toggleFly(state)
-    _G.Fly_Enabled = state
-    local char = playerObj.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-    
-    if state then
-        char:FindFirstChildOfClass("Humanoid").PlatformStand = true
-        flyBv = Instance.new("BodyVelocity", char.HumanoidRootPart)
-        flyBv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        flyBg = Instance.new("BodyGyro", char.HumanoidRootPart)
-        flyBg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-        
-        task.spawn(function()
-            while _G.Fly_Enabled and char.HumanoidRootPart and char.HumanoidRootPart.Parent do
-                local dir = Vector3.new(0,0,0)
-                if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir = dir + camera.CFrame.LookVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir = dir - camera.CFrame.LookVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir = dir - camera.CFrame.RightVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir = dir + camera.CFrame.RightVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0,1,0) end
-                if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then dir = dir - Vector3.new(0,1,0) end
-                
-                flyBv.Velocity = dir.Magnitude > 0 and dir.Unit * shared.flySpeed or Vector3.new(0,0,0)
-                flyBg.CFrame = camera.CFrame
-                task.wait()
-            end
-        end)
-    else
-        if flyBv then flyBv:Destroy() end 
-        if flyBg then flyBg:Destroy() end
-        if char:FindFirstChildOfClass("Humanoid") then 
-            char:FindFirstChildOfClass("Humanoid").PlatformStand = false 
-        end
+-- 1. עדכון מהירות וקפיצה בזמן אמת (עבור הסליידרים)
+function PlayerMod.updateSpeed(v)
+    shared.walkSpeedValue = v
+    if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+        player.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = v
     end
 end
 
--- 2. מעבר קירות (Noclip) & אכיפת מהירות/קפיצה
-RunService.Stepped:Connect(function()
-    if _G.Noclip_Enabled and playerObj.Character then
-        for _, p in ipairs(playerObj.Character:GetDescendants()) do 
-            if p:IsA("BasePart") then p.CanCollide = false end 
-        end
+function PlayerMod.updateJump(v)
+    shared.jumpPowerValue = v
+    if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+        local hum = player.Character:FindFirstChildOfClass("Humanoid")
+        hum.JumpPower = v
+        hum.UseJumpPower = true
     end
-    -- מוודא שהערכים של הסליידרים נשארים בתוקף ולא מתאפסים ע"י המשחק
-    if playerObj.Character and playerObj.Character:FindFirstChildOfClass("Humanoid") then
-        local hum = playerObj.Character:FindFirstChildOfClass("Humanoid")
-        hum.WalkSpeed = shared.walkSpeedValue
-        if hum.UseJumpPower then
-            hum.JumpPower = shared.jumpPowerValue
-        else
-            hum.JumpHeight = (shared.jumpPowerValue * 0.144) -- המרה גנרית ל-Height אם המשחק לא משתמש ב-Power
-        end
-    end
-end)
-
-function PlayerMod.toggleNoclip(state)
-    _G.Noclip_Enabled = state
 end
 
--- 3. קפיצה אינסופית
-function PlayerMod.toggleInfJump(state)
-    _G.InfJump_Enabled = state
-end
-
-UserInputService.JumpRequest:Connect(function()
-    if _G.InfJump_Enabled and playerObj.Character and playerObj.Character:FindFirstChildOfClass("Humanoid") then
-        playerObj.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
-    end
-end)
-
--- 4. מצב אלוהים (God Mode בסיסי ומקומי)
-function PlayerMod.toggleGodMode(state)
-    _G.GodMode_Enabled = state
-end
-
+-- לולאה קבועה שמוודאת שהמהירות והקפיצה לא מתאפסות ע"י המשחק
 RunService.Heartbeat:Connect(function()
-    if _G.GodMode_Enabled and playerObj.Character and playerObj.Character:FindFirstChildOfClass("Humanoid") then
-        local hum = playerObj.Character:FindFirstChildOfClass("Humanoid")
-        hum.MaxHealth = math.huge
-        hum.Health = math.huge
+    if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+        local hum = player.Character:FindFirstChildOfClass("Humanoid")
+        if hum.WalkSpeed ~= shared.walkSpeedValue and not isFlying then
+            hum.WalkSpeed = shared.walkSpeedValue
+        end
+        if hum.JumpPower ~= shared.jumpPowerValue then
+            hum.JumpPower = shared.jumpPowerValue
+            hum.UseJumpPower = true
+        end
     end
 end)
 
--- 5. שחקן בלתי נראה (Invisible במצב שרת מקומי)
-local invisClone
-function PlayerMod.toggleInvisible(state)
-    local char = playerObj.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+-- 2. כפתור FLY MODE (תעופה חלקה)
+function PlayerMod.toggleFly(state)
+    isFlying = state
+    if flyLoop then flyLoop:Disconnect() flyLoop = nil end
     
-    if state then
-        char.Archivable = true 
-        invisClone = char:Clone() 
-        invisClone.Parent = workspace
+    if isFlying then
+        local character = player.Character
+        if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+        local root = character.HumanoidRootPart
         
-        for _, p in ipairs(invisClone:GetDescendants()) do 
-            if p:IsA("BasePart") then p.Transparency = 0.4 p.CanCollide = false end 
-        end
+        -- יצירת כוחות פיזיקליים לתעופה
+        local bv = Instance.new("BodyVelocity")
+        bv.Name = "FlyBV"
+        bv.MaxForce = Vector3.new(1,1,1) * 9e9
+        bv.Velocity = Vector3.new(0,0.1,0)
+        bv.Parent = root
         
-        camera.CameraSubject = invisClone:FindFirstChildOfClass("Humanoid")
+        local bg = Instance.new("BodyGyro")
+        bg.Name = "FlyBG"
+        bg.MaxTorque = Vector3.new(1,1,1) * 9e9
+        bg.CFrame = root.CFrame
+        bg.Parent = root
         
-        for _, p in ipairs(char:GetDescendants()) do 
-            if p:IsA("BasePart") then p.Transparency = 1 p.CanCollide = false 
-            elseif p:IsA("Decal") then p.Transparency = 1 end 
-        end
+        local camera = workspace.CurrentCamera
         
-        task.spawn(function()
-            while invisClone and char and char:FindFirstChild("HumanoidRootPart") do
-                if invisClone:FindFirstChild("HumanoidRootPart") then
-                    char.HumanoidRootPart.CFrame = invisClone.HumanoidRootPart.CFrame * CFrame.new(0, -25, 0)
-                    invisClone:FindFirstChildOfClass("Humanoid"):Move(char:FindFirstChildOfClass("Humanoid").MoveDirection, false)
+        flyLoop = RunService.RenderStepped:Connect(function()
+            if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            local currentRoot = player.Character.HumanoidRootPart
+            
+            local flyBv = currentRoot:FindFirstChild("FlyBV")
+            local flyBg = currentRoot:FindFirstChild("FlyBG")
+            
+            if flyBv and flyBg and humanoid then
+                humanoid.PlatformStand = true
+                flyBg.CFrame = camera.CFrame
+                
+                local moveDirection = humanoid.MoveDirection
+                local velocity = moveDirection * shared.flySpeed
+                
+                -- הוספת כיוון אנכי עם מקשים (Space לעלות, Shift לרדת)
+                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                    velocity = velocity + Vector3.new(0, shared.flySpeed, 0)
+                elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+                    velocity = velocity - Vector3.new(0, shared.flySpeed, 0)
                 end
-                task.wait()
+                
+                flyBv.Velocity = velocity
             end
         end)
     else
-        if invisClone then 
-            char.HumanoidRootPart.CFrame = invisClone.HumanoidRootPart.CFrame 
-            invisClone:Destroy() 
-            invisClone = nil 
+        -- כיבוי תעופה וניקוי
+        if player.Character then
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then humanoid.PlatformStand = false end
+            
+            local root = player.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                if root:FindFirstChild("FlyBV") then root.FlyBV:Destroy() end
+                if root:FindFirstChild("FlyBG") then root.FlyBG:Destroy() end
+            end
         end
-        camera.CameraSubject = char:FindFirstChildOfClass("Humanoid")
-        for _, p in ipairs(char:GetDescendants()) do 
-            if p:IsA("BasePart") then p.Transparency = 0 p.CanCollide = true 
-            elseif p:IsA("Decal") then p.Transparency = 0 end 
+    end
+end
+
+-- 3. כפתור INFINITE JUMP (קפיצה אינסופית באוויר)
+function PlayerMod.toggleInfJump(state)
+    isInfJump = state
+    if jumpConnection then jumpConnection:Disconnect() jumpConnection = nil end
+    
+    if isInfJump then
+        jumpConnection = UserInputService.JumpRequest:Connect(function()
+            if isInfJump and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+                player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+            end
+        end)
+    end
+end
+
+-- 4. כפתור NOCLIP (מעבר דרך קירות)
+function PlayerMod.toggleNoclip(state)
+    isNoclip = state
+    if noclipLoop then noclipLoop:Disconnect() noclipLoop = nil end
+    
+    if isNoclip then
+        noclipLoop = RunService.Stepped:Connect(function()
+            if isNoclip and player.Character then
+                for _, part in ipairs(player.Character:GetDescendants()) do
+                    if part:IsA("BasePart") and part.CanCollide then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    end
+end
+
+-- 5. כפתור GOD MODE (גוד מוד בסיסי - מונע מוות מנזק רגיל בחלק מהמשחקים)
+function PlayerMod.toggleGodMode(state)
+    if state then
+        local cam = workspace.CurrentCamera
+        local char = player.Character
+        if char and char:FindFirstChildOfClass("Humanoid") then
+            char:FindFirstChildOfClass("Humanoid").Name = "BrokenHumanoid"
+        end
+        local newChar = char:Clone()
+        newChar.Parent = workspace
+        player.Character = newChar
+        cam.CameraSubject = newChar:FindFirstChildOfClass("Humanoid")
+        char:Destroy()
+    else
+        if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+            player.Character:FindFirstChildOfClass("Humanoid").Health = 0
+        end
+    end
+end
+
+-- 6. כפתור INVISIBLE (הפיכה לבלתי נראה לשחקנים אחרים)
+function PlayerMod.toggleInvisible(state)
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local root = player.Character.HumanoidRootPart
+        for _, part in ipairs(player.Character:GetDescendants()) do
+            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                part.Transparency = state and 1 or 0
+                if part:IsA("Decal") then part.Transparency = state and 1 or 0 end
+            end
         end
     end
 end
