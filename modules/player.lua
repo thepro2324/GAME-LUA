@@ -1,4 +1,4 @@
--- modules/player.lua (גרסה מלאה - תיקון סופי: רווח עולה, קונטרול יורד)
+-- modules/player.lua (גרסה מלאה - תעופה נקייה: רווח עולה, קונטרול יורד)
 
 local PlayerMod = {}
 
@@ -16,12 +16,18 @@ local noclipConnection = nil
 local infJumpConnection = nil
 local autoResetConnection = nil
 
+-- הגדרת ערכי ברירת מחדל גלובליים
+shared.walkSpeedValue = shared.walkSpeedValue or 16
+shared.jumpPowerValue = shared.jumpPowerValue or 50
+
 function PlayerMod.updateSpeed(v)
     shared.walkSpeedValue = v
     local char = lp.Character
     if char then
         local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum then hum.WalkSpeed = v end
+        if hum then 
+            hum.WalkSpeed = v 
+        end
     end
 end
 
@@ -30,7 +36,10 @@ function PlayerMod.updateJump(v)
     local char = lp.Character
     if char then
         local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum then hum.JumpPower = v end
+        if hum then 
+            hum.UseJumpPower = true
+            hum.JumpPower = v 
+        end
     end
 end
 
@@ -44,15 +53,19 @@ end
 
 lp.CharacterAdded:Connect(function(char)
     local hum = char:WaitForChild("Humanoid")
+    task.wait(0.1) -- השהייה קלה לוודא שהדמות נטענה קודם
     if shared.walkSpeedValue then hum.WalkSpeed = shared.walkSpeedValue end
-    if shared.jumpPowerValue then hum.JumpPower = shared.jumpPowerValue end
+    if shared.jumpPowerValue then 
+        hum.UseJumpPower = true
+        hum.JumpPower = shared.jumpPowerValue 
+    end
     if shared.isFlying then
         task.wait(0.5)
         PlayerMod.toggleFly(true)
     end
 end)
 
--- ==================== מערכת FLY מתוקנת (רווח עולה, קונטרול יורד) ====================
+-- ==================== מערכת FLY חלקה ונקייה (בלי התנגשויות מצלמה) ====================
 function PlayerMod.toggleFly(state)
     if flyConnection then flyConnection:Disconnect() flyConnection = nil end
     if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
@@ -86,25 +99,33 @@ function PlayerMod.toggleFly(state)
     flyConnection = RunService.RenderStepped:Connect(function()
         if not hrp or not bodyVelocity or not bodyVelocity.Parent then return end
         
+        local lookVector = cam.CFrame.LookVector
+        local rightVector = cam.CFrame.RightVector
+        
+        -- נרמול וקטור המצלמה האופקי כדי שלא ישפיע על הגובה (ציר ה-Y תמיד 0 בתנועה קדימה/אחורה)
+        local forward = Vector3.new(lookVector.X, 0, lookVector.Z).Unit
+        local side = Vector3.new(rightVector.X, 0, rightVector.Z).Unit
+        
         local moveDir = Vector3.new(0, 0, 0)
         
-        -- תנועה אופקית (W, A, S, D)
-        if UIS:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
-        if UIS:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
-        if UIS:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
-        if UIS:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
+        -- תנועה אופקית נקייה
+        if UIS:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + forward end
+        if UIS:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - forward end
+        if UIS:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + side end
+        if UIS:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - side end
         
-        -- תנועה אנכית מדויקת לבקשתך
+        -- תנועה אנכית טהורה ומדויקת בלבד!
         if UIS:IsKeyDown(Enum.KeyCode.Space) then
-            moveDir = moveDir + Vector3.new(0, 1, 0) -- רווח מעלה
+            moveDir = moveDir + Vector3.new(0, 1, 0) -- רווח מעלה בלבד
         end
         if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then
-            moveDir = moveDir - Vector3.new(0, 1, 0) -- קונטרול מוריד
+            moveDir = moveDir - Vector3.new(0, 1, 0) -- קונטרול מוריד בלבד
         end
         
-        bodyGyro.CFrame = CFrame.new(hrp.Position, hrp.Position + cam.CFrame.LookVector)
-        local speed = shared.flySpeed or 100
+        -- שמירה על כיוון הפנים של השחקן לאן שהמצלמה מסתכלת
+        bodyGyro.CFrame = CFrame.new(hrp.Position, hrp.Position + Vector3.new(lookVector.X, 0, lookVector.Z))
         
+        local speed = shared.flySpeed or 100
         if moveDir.Magnitude > 0 then
             bodyVelocity.Velocity = moveDir.Unit * speed
         else
