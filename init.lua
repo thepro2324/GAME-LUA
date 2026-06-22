@@ -1,12 +1,12 @@
 -- init.lua (הקובץ הראשי שאתה מריץ ב-Executor)
 
--- הגדרות ה-GitHub שלך - שים פה את הפרטים המדויקים שלך!
+-- הגדרות ה-GitHub שלך
 local GITHUB_USER = "thepro2324"
 local REPO_NAME   = "GAME-LUA"
 
 -- פונקציה חכמה שמושכת קבצים מהגיטאהב שלך בזמן אמת
 local function import(path)
-    local url = string.format("https://raw.githubusercontent.com/%s/%s/main/%s", GITHUB_USER, repoName, path)
+    local url = string.format("https://raw.githubusercontent.com/%s/%s/main/%s", GITHUB_USER, REPO_NAME, path)
     local success, result = pcall(function()
         return game:HttpGet(url)
     end)
@@ -41,11 +41,9 @@ local MenuInterface = Menu.init(Elements)
 
 -- טאב 1: HOME
 local homeTab = MenuInterface.createTab("Home", "🏠", 1)
--- (התוכן של ה-Home Card כבר מובנה בתוך menu.lua שבנית)
 
 -- טאב 2: TARGET
 local targetTab = MenuInterface.createTab("Target", "🎯", 2)
--- (מנגנון ה-Targeter מנוהל ישירות מול teleport.lua ומול התיבה שבתוך menu.lua)
 
 -- טאב 3: PLAYER (חיבור סליידרים וכפתורים)
 local playerTab = MenuInterface.createTab("Player", "🧍", 3)
