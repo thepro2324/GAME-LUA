@@ -1,4 +1,3 @@
--- ui/menu.lua
 local Menu = {}
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -10,7 +9,6 @@ function Menu.init(Elements)
     screenGui.ResetOnSpawn = false
     screenGui.Parent = playerObj:WaitForChild("PlayerGui")
 
-    -- חלון ראשי - סגנון Cyber Dark
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "MainFrame"
     mainFrame.Parent = screenGui
@@ -21,8 +19,7 @@ function Menu.init(Elements)
     Elements.addStroke(mainFrame, Color3.fromRGB(40, 40, 50), 1.5)
     mainFrame.Active = true
 
-    -- כותרת עליונה דקה (ממנה גוררים את החלון)
-    local topBar = Instance.new("TextButton") -- הפכנו את זה ל-TextButton כדי שהקליק יתפס בצורה מושלמת
+    local topBar = Instance.new("TextButton")
     topBar.Name = "TopBar"
     topBar.Size = UDim2.new(1, 0, 0, 35)
     topBar.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
@@ -49,7 +46,6 @@ function Menu.init(Elements)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Parent = topBar
 
-    -- כפתור סגירה (X)
     local closeButton = Instance.new("TextButton")
     closeButton.Size = UDim2.new(0, 22, 0, 22)
     closeButton.Position = UDim2.new(1, -28, 0, 6)
@@ -58,13 +54,12 @@ function Menu.init(Elements)
     closeButton.TextColor3 = Color3.fromRGB(255, 90, 90)
     closeButton.BackgroundColor3 = Color3.fromRGB(28, 18, 22)
     closeButton.Font = Enum.Font.GothamBold
-    closeButton.ZIndex = 5 -- דואג שהכפתור תמיד יהיה מעל הגרירה
+    closeButton.ZIndex = 5
     Elements.addCorner(closeButton, UDim.new(0, 5))
     Elements.addStroke(closeButton, Color3.fromRGB(70, 35, 35), 1)
     closeButton.Parent = topBar
     closeButton.MouseButton1Click:Connect(function() screenGui:Destroy() end)
 
-    -- סיידבר קטגוריות בלי אימוג'ים
     local sideBar = Instance.new("ScrollingFrame")
     sideBar.Size = UDim2.new(0, 130, 1, -45)
     sideBar.Position = UDim2.new(0, 5, 0, 40)
@@ -85,7 +80,6 @@ function Menu.init(Elements)
     sidePadding.PaddingTop = UDim.new(0, 6)
     sidePadding.Parent = sideBar
 
-    -- פאנל תוכן
     local contentFrame = Instance.new("Frame")
     contentFrame.Size = UDim2.new(1, -150, 1, -45)
     contentFrame.Position = UDim2.new(0, 143, 0, 40)
@@ -119,7 +113,6 @@ function Menu.init(Elements)
         container.Parent = contentFrame
         table.insert(containers, container)
 
-        -- כפתור הטאב
         local tabBtn = Instance.new("TextButton")
         tabBtn.Size = UDim2.new(0.92, 0, 0, 32)
         tabBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
@@ -142,4 +135,54 @@ function Menu.init(Elements)
             end
             container.Visible = true
             tabBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
-            tabBtn.TextColor3 = Color3.fromRGB(255, 255
+            tabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            bStroke.Color = Color3.fromRGB(65, 65, 90)
+        end)
+
+        if order == 1 then
+            container.Visible = true
+            tabBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
+            tabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            bStroke.Color = Color3.fromRGB(65, 65, 90)
+        end
+
+        return container
+    end
+
+    local menuVisible = true
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if not gameProcessed and input.KeyCode == Enum.KeyCode.Insert then
+            menuVisible = not menuVisible
+            mainFrame.Visible = menuVisible
+        end
+    end)
+
+    local dragging, dragInput, dragStart, startPos
+    topBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = mainFrame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    topBar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+
+    return Menu
+end
+
+return Menu
