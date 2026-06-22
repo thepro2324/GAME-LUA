@@ -4,16 +4,24 @@
 local GITHUB_USER = "thepro2324"
 local REPO_NAME   = "GAME-LUA"
 
--- פונקציה חכמה שמושכת קבצים מהגיטאהב שלך בזמן אמת
+-- פונקציה מעודכנת ויציבה יותר עבור Xeno
 local function import(path)
-    local url = string.format("https://raw.githubusercontent.com/%s/%s/main/%s", GITHUB_USER, REPO_NAME, path)
+    local url = "https://raw.githubusercontent.com/" .. GITHUB_USER .. "/" .. REPO_NAME .. "/main/" .. path
     local success, result = pcall(function()
-        return game:HttpGet(url)
+        return game:HttpGet(url, true) -- הוספנו true כדי לעקוף בעיות קאש
     end)
-    if success then
-        return loadstring(result)()
+    
+    if success and result and result ~= "" then
+        local func, err = loadstring(result)
+        if func then
+            return func()
+        else
+            warn("🔴 [Ori Dev] שגיאת קומפילציה בקובץ " .. path .. ": " .. tostring(err))
+            return nil
+        end
     else
-        warn("🔴 [Ori Dev] נכשלה טעינת המודול: " .. path)
+        warn("🔴 [Ori Dev] נכשלה הורדת המודול: " .. path)
+        return nil
     end
 end
 
@@ -29,7 +37,7 @@ local TeleportMod  = import("modules/teleport.lua")
 
 -- וידוא שהכל נטען בהצלחה
 if not (Elements and Menu and PlayerMod and VisualsMod and WorldMod and TeleportMod) then
-    error("🔴 [Ori Dev] אחד או יותר מהקבצים לא נטענו כראוי מ-GitHub. תבדוק שמות ונתיבים!")
+    error("🔴 [Ori Dev] קריסה: אחד או יותר מהרכיבים לא נטענו מ-GitHub. תבדוק שמות קבצים!")
 end
 
 -- 3. אתחול ה-Menu הראשי
@@ -45,7 +53,7 @@ local homeTab = MenuInterface.createTab("Home", "🏠", 1)
 -- טאב 2: TARGET
 local targetTab = MenuInterface.createTab("Target", "🎯", 2)
 
--- טאב 3: PLAYER (חיבור סליידרים וכפתורים)
+-- טאב 3: PLAYER
 local playerTab = MenuInterface.createTab("Player", "🧍", 3)
 
 Elements.createSlider(playerTab, "Walk Speed", 16, 500, 16, function(v) shared.walkSpeedValue = v end)
