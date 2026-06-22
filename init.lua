@@ -1,4 +1,4 @@
--- init.lua (גרסה חסינת קריסות - מונעת attempt to call a nil value)
+-- init.lua (גרסה סופית - תיקון מלא לבעיית loadstring ושגיאות nil)
 
 local GITHUB_USER = "thepro2324"
 local REPO_NAME   = "GAME-LUA"
@@ -8,8 +8,17 @@ local function import(path)
     local success, result = pcall(function()
         return game:HttpGet(url, true)
     end)
-    if success and result and result ~= "" then
-        local func, err = loadstring(result)
+    
+    -- בדיקה שההורדה הצליחה והתוכן אינו ריק או דף שגיאה 404 של גיטהאב
+    if success and result and result ~= "" and not result:find("404: Not Found") then
+        -- התאמה לכל סוגי האקזקיוטורים (תמיכה ב-loadstring גלובלי)
+        local loader = loadstring or typeof(loadstring) == "function" and loadstring
+        if not loader then
+            warn("🔴 [Ori Dev] האקזקיוטור שלך לא תומך ב-loadstring!")
+            return {}
+        end
+        
+        local func, err = loader(result)
         if func then 
             local runSuccess, runResult = pcall(func)
             if runSuccess then 
@@ -20,14 +29,16 @@ local function import(path)
         else
             warn("🔴 [Ori Dev] שגיאה בקומפילציה של המודול: " .. path .. " -> " .. tostring(err))
         end
+    else
+        warn("⚠️ [Ori Dev] נכשל ייבוא הקובץ מהנתיב: " .. path .. " (ייתכן והקובץ לא קיים ב-GitHub)")
     end
-    return {} -- מחזיר טבלה ריקה במקום nil כדי למנוע קריסה
+    return {} -- החזרת טבלה ריקה למניעת קריסות בהמשך
 end
 
 local Elements = import("ui/elements.lua")
 local Menu = import("ui/menu.lua")
 
--- הגנה מפני מודולים שלא נטענו
+-- טעינת מודולים בטוחה
 local PlayerMod    = import("modules/player.lua") or {}
 local VisualsMod   = import("modules/visuals.lua") or {}
 local WorldMod     = import("modules/world.lua") or {}
@@ -35,18 +46,18 @@ local TeleportMod  = import("modules/teleport.lua") or {}
 local TargetMod    = import("modules/target.lua") or {}
 local SettingsMod  = import("modules/settings.lua") or {}
 
--- פונקציות עטיפה בטוחות כדי למנוע קריאה ל-nil value
+-- פונקציית עטיפה בטוחה לקריאה לפונקציות מודול
 local function safeCall(mod, funcName, ...)
     if mod and mod[funcName] then
         return mod[funcName](...)
     end
 end
 
-if not Elements or table. Mackenzie == nil or not Menu or not Menu.init then 
-    -- אם ה-UI הבסיסי לא נטען, ניצור ממשק בסיסי חלופי כדי שלא יקרוס לחלוטין
+-- בדיקה תקינה של קבצי ה-UI
+if not Elements or not Menu or not Menu.init then 
     Menu = {init = function() return {createTab = function() return Instance.new("Frame") end, updateTabTitle = function() end} end}
     Elements = {createToggleButton = function(p) return Instance.new("TextButton", p) end, createSlider = function() end, addCorner = function() end, addStroke = function() end}
-    warn("⚠️ [Ori Dev] קבצי ה-UI הבסיסיים לא נמצאו ב-GitHub, נטען במצב הגנה!")
+    warn("⚠️ [Ori Dev] קבצי ה-UI הבסיסיים לא תקינים או שלא נמצאו ב-GitHub, נטען במצב הגנה!")
 end
 
 local MenuInterface = Menu.init(Elements)
@@ -512,4 +523,4 @@ UIS.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
-print("🚀 [Ori Dev] קובץ init.lua חסין קריסות עודכן בהצלחה!")
+print("🚀 [Ori Dev] קובץ init.lua עודכן ומוכן להרצה ללא שגיאות!")
