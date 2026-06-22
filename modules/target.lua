@@ -1,118 +1,151 @@
--- modules/visuals.lua
-local VisualsMod = {}
+-- modules/target.lua
+local TargetMod = {}
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
 local localPlayer = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
-local espConnections = {}
-local isMasterESP = false
-local isESPBox = false
-local isESPNames = false
-local isTracers = false
-local isChams = false
+-- משתנים גלובליים משותפים
+shared.aimbotFOV = shared.aimbotFOV or 90
+shared.selectedTargetName = shared.selectedTargetName or ""
 
--- פונקציית עזר ליצירת קופסאות ושמות בסיסיים (Highlight & Billboard)
-local function createESP(player)
-    if player == localPlayer then return end
-    
-    local function applyVisuals(character)
-        if not character then return end
-        
-        -- יצירת Chams / Highlight (צביעת שחקן דרך קירות)
-        local highlight = character:FindFirstChild("ESPHighlight")
-        if not highlight then
-            highlight = Instance.new("Highlight")
-            highlight.Name = "ESPHighlight"
-            highlight.FillColor = Color3.fromRGB(255, 60, 60)
-            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-            highlight.FillTransparency = 0.5
-            highlight.OutlineTransparency = 0
-            highlight.Parent = character
-        end
-        highlight.Enabled = isChams and isMasterESP
+local killAuraLoop, silentAimLoop, tpLoop, spectateLoop, flingLoop
+local lockedTarget = nil
 
-        -- יצירת תיבת טקסט מעל הראש (שמות)
-        local head = character:WaitForChild("Head", 5)
-        if head then
-            local bbGui = head:FindFirstChild("ESPTag")
-            if not bbGui then
-                bbGui = Instance.new("BillboardGui")
-                bbGui.Name = "ESPTag"
-                bbGui.Size = UDim2.new(0, 100, 0, 30)
-                bbGui.StudsOffset = Vector3.new(0, 2.5, 0)
-                bbGui.AlwaysOnTop = true
-                
-                local textLabel = Instance.new("TextLabel")
-                textLabel.Size = UDim2.new(1, 0, 1, 0)
-                textLabel.BackgroundTransparency = 1
-                textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-                textLabel.Font = Enum.Font.GothamBold
-                textLabel.TextSize = 12
-                textLabel.TextStrokeTransparency = 0
-                textLabel.Text = player.Name
-                textLabel.Parent = bbGui
-                bbGui.Parent = head
-            end
-            bbGui.Enabled = isESPNames and isMasterESP
-        end
+-- פונקציה לבחירת שחקן לפי השם שהוקלד ב-TextBox
+function TargetMod.setTargetByName(name)
+    shared.selectedTargetName = name
+    if name == "" then
+        lockedTarget = nil
+        print("🎯 [Ori Dev] המטרה הוסרה. חוזר למצב אוטומטי.")
+        return
     end
 
-    if player.Character then applyVisuals(player.Character) end
-    player.CharacterAdded:Connect(applyVisuals)
-end
-
--- רענון ועדכון ה-ESP בזמן אמת
-local function updateESPStatus()
+    -- חיפוש שחקן לפי שם מלא או חלקי
     for _, player in ipairs(Players:GetPlayers()) do
-        if player.Character then
-            local highlight = player.Character:FindFirstChild("ESPHighlight")
-            if highlight then highlight.Enabled = isChams and isMasterESP end
-            
-            local head = player.Character:FindFirstChild("Head")
-            local bbGui = head and head:FindFirstChild("ESPTag")
-            if bbGui then bbGui.Enabled = isESPNames and isMasterESP end
+        if player ~= localPlayer and (player.Name:lower():sub(1, #name) == name:lower() or player.DisplayName:lower():sub(1, #name) == name:lower()) then
+            lockedTarget = player
+            print("🎯 [Ori Dev] מטרה נעולה על: " .. player.Name)
+            return
+        end
+    end
+    
+    lockedTarget = nil
+    print("❌ [Ori Dev] לא נמצא שחקן בשם: " .. name)
+end
+
+-- פונקציית עזר לקבלת המטרה הנוכחית (השחקן שנעלנו עליו, או הכי קרוב לעכבר אם אין נעילה)
+local function getActiveTarget()
+    if lockedTarget and lockedTarget.Character and lockedTarget.Character:FindFirstChild("HumanoidRootPart") and lockedTarget.Character:FindFirstChildOfClass("Humanoid") and lockedTarget.Character:FindFirstChildOfClass("Humanoid").Health > 0 then
+        return lockedTarget
+    end
+    
+    -- אם אין שחקן נעול ב-TextBox, מחפש את הכי קרוב לעכבר כגיבוי
+    local closestPlayer = nil
+    local shortestDistance = math.huge
+    local mousePos = UserInputService:GetMouseLocation()
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChildOfClass("Humanoid") and player.Character:FindFirstChildOfClass("Humanoid").Health > 0 then
+            local pos, onScreen = camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+            if onScreen then
+                local distance = (Vector3.new(pos.X, pos.Y, 0) - Vector3.new(mousePos.X, mousePos.Y, 0)).Magnitude
+                if distance < shortestDistance and distance <= shared.aimbotFOV then
+                    shortestDistance = distance
+                    closestPlayer = player
+                end
+            end
+        end
+    end
+    return closestPlayer
+end
+
+-- 1. כפתור KILL AURA
+function TargetMod.toggleKillAura(state)
+    if killAuraLoop then killAuraLoop:Disconnect() killAuraLoop = nil end
+    if state then
+        killAuraLoop = RunService.Heartbeat:Connect(function()
+            local target = getActiveTarget()
+            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local distance = (localPlayer.Character.HumanoidRootPart.Position - target.Character.HumanoidRootPart.Position).Magnitude
+                if distance <= 15 then
+                    local tool = localPlayer.Character:FindFirstChildOfClass("Tool")
+                    if tool then tool:Activate() end
+                end
+            end
+        end)
+    end
+end
+
+-- 2. כפתור SILENT AIM
+function TargetMod.toggleSilentAim(state)
+    if silentAimLoop then silentAimLoop:Disconnect() silentAimLoop = nil end
+    if state then
+        silentAimLoop = RunService.RenderStepped:Connect(function()
+            local target = getActiveTarget()
+            if target and target.Character and target.Character:FindFirstChild("Head") then
+                camera.CFrame = CFrame.new(camera.CFrame.Position, target.Character.Head.Position)
+            end
+        end)
+    end
+end
+
+-- 3. כפתור TELEPORT TO TARGET (משתגר ישירות אל היעד שננעל ב-TextBox)
+function TargetMod.toggleTPToTarget(state)
+    if tpLoop then tpLoop:Disconnect() tpLoop = nil end
+    if state then
+        tpLoop = RunService.Heartbeat:Connect(function()
+            local target = getActiveTarget()
+            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                localPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+            end
+        end)
+    end
+end
+
+-- 4. כפתור LOOP KILL TARGET / FLING
+function TargetMod.toggleLoopKill(state)
+    if flingLoop then flingLoop:Disconnect() flingLoop = nil end
+    if state then
+        flingLoop = RunService.Heartbeat:Connect(function()
+            local target = getActiveTarget()
+            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    local bV = Instance.new("BodyAngularVelocity")
+                    bV.AngularVelocity = Vector3.new(0, 99999, 0)
+                    bV.MaxTorque = Vector3.new(0, math.huge, 0)
+                    bV.Parent = localPlayer.Character.HumanoidRootPart
+                    localPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
+                    task.wait(0.1)
+                    bV:Destroy()
+                end
+            end
+        end)
+    end
+end
+
+-- 5. כפתור SPECTATE TARGET (עוקב עם המצלמה אחרי השחקן שרשמת)
+function TargetMod.toggleSpectate(state)
+    if spectateLoop then spectateLoop:Disconnect() spectateLoop = nil end
+    if state then
+        spectateLoop = RunService.RenderStepped:Connect(function()
+            local target = getActiveTarget()
+            if target and target.Character and target.Character:FindFirstChildOfClass("Humanoid") then
+                camera.CameraSubject = target.Character:FindFirstChildOfClass("Humanoid")
+            end
+        end)
+    else
+        if localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Humanoid") then
+            camera.CameraSubject = localPlayer.Character:FindFirstChildOfClass("Humanoid")
         end
     end
 end
 
--- 1. כפתור מאסטר (חייב להיות דלוק כדי שה-ESP יעבוד)
-function VisualsMod.toggleMasterESP(state)
-    isMasterESP = state
-    if state then
-        for _, player in ipairs(Players:GetPlayers()) do createESP(player) end
-        espConnections["PlayerAdded"] = Players.PlayerAdded:Connect(createESP)
-    else
-        if espConnections["PlayerAdded"] then espConnections["PlayerAdded"]:Disconnect() end
-    end
-    updateESPStatus()
+-- 6. כפתור FLING TARGET
+function TargetMod.toggleFling(state)
+    TargetMod.toggleLoopKill(state)
 end
 
--- 2. כפתור שמות (ESP Names)
-function VisualsMod.toggleESPNames(state)
-    isESPNames = state
-    updateESPStatus()
-end
-
--- 3. כפתור צביעת שחקנים (Chams)
-function VisualsMod.toggleChams(state)
-    isChams = state
-    updateESPStatus()
-end
-
--- 4. כפתור Fullbright (ביטול חושך וצללים)
-local originalAmbient = game:GetService("Lighting").Ambient
-function VisualsMod.toggleFullbright(state)
-    if state then
-        game:GetService("Lighting").Ambient = Color3.fromRGB(255, 255, 255)
-    else
-        game:GetService("Lighting").Ambient = originalAmbient
-    end
-end
-
--- הגדרות ריקות לפונקציות הנוספות כדי למנוע שגיאות
-function VisualsMod.toggleESPBox(state) isESPBox = state end
-function VisualsMod.toggleTracers(state) isTracers = state end
-function VisualsMod.toggleHideName(state) end
-
-return VisualsMod
+return TargetMod
