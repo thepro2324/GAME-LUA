@@ -21,10 +21,13 @@ function Menu.init(Elements)
     Elements.addStroke(mainFrame, Color3.fromRGB(40, 40, 50), 1.5)
     mainFrame.Active = true
 
-    -- כותרת עליונה דקה
-    local topBar = Instance.new("Frame")
+    -- כותרת עליונה דקה (ממנה גוררים את החלון)
+    local topBar = Instance.new("TextButton") -- הפכנו את זה ל-TextButton כדי שהקליק יתפס בצורה מושלמת
+    topBar.Name = "TopBar"
     topBar.Size = UDim2.new(1, 0, 0, 35)
     topBar.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+    topBar.Text = ""
+    topBar.AutoButtonColor = false
     Elements.addCorner(topBar, UDim.new(0, 8))
     topBar.Parent = mainFrame
     
@@ -55,6 +58,7 @@ function Menu.init(Elements)
     closeButton.TextColor3 = Color3.fromRGB(255, 90, 90)
     closeButton.BackgroundColor3 = Color3.fromRGB(28, 18, 22)
     closeButton.Font = Enum.Font.GothamBold
+    closeButton.ZIndex = 5 -- דואג שהכפתור תמיד יהיה מעל הגרירה
     Elements.addCorner(closeButton, UDim.new(0, 5))
     Elements.addStroke(closeButton, Color3.fromRGB(70, 35, 35), 1)
     closeButton.Parent = topBar
@@ -115,7 +119,7 @@ function Menu.init(Elements)
         container.Parent = contentFrame
         table.insert(containers, container)
 
-        -- כפתור הטאב (בלי אימוג'י, אותיות גדולות למראה נקי)
+        -- כפתור הטאב
         local tabBtn = Instance.new("TextButton")
         tabBtn.Size = UDim2.new(0.92, 0, 0, 32)
         tabBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
@@ -138,46 +142,4 @@ function Menu.init(Elements)
             end
             container.Visible = true
             tabBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
-            tabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            bStroke.Color = Color3.fromRGB(65, 65, 90)
-        end)
-
-        if order == 1 then
-            container.Visible = true
-            tabBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
-            tabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            bStroke.Color = Color3.fromRGB(65, 65, 90)
-        end
-
-        return container
-    end
-
-    -- מערכת פתיחה וסגירה מובנית עם כפתור Insert במקלדת
-    local menuVisible = true
-    UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if not gameProcessed and input.KeyCode == Enum.KeyCode.Insert then
-            menuVisible = not menuVisible
-            mainFrame.Visible = menuVisible
-        end
-    end)
-
-    -- גרירה חלקה
-    local dragging, dragInput, dragStart, startPos
-    topBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true dragStart = input.Position startPos = mainFrame.Position
-            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
-        end
-    end)
-    topBar.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end end)
-    UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-
-    return Menu
-end
-
-return Menu
+            tabBtn.TextColor3 = Color3.fromRGB(255, 255
