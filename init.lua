@@ -1,6 +1,5 @@
--- init.lua (הקובץ הראשי - גרסת ה-Mega Hub המלאה)
+-- init.lua (גרסה מלאה עם תיבת בחירת שחקן בטאב TARGET)
 
--- הגדרות ה-GitHub שלך
 local GITHUB_USER = "thepro2324"
 local REPO_NAME   = "GAME-LUA"
 
@@ -17,7 +16,6 @@ local function import(path)
     end
 end
 
--- 1. טעינת רכיבי ה-UI
 local Elements = import("ui/elements.lua")
 local Menu = import("ui/menu.lua")
 
@@ -25,19 +23,13 @@ if not Elements or not Menu then
     error("🔴 [Ori Dev] שגיאה בטעינת קבצי ה-UI מה-GitHub!")
 end
 
--- 2. טעינת המודולים (עם גיבוי למניעת קריסות)
 local PlayerMod    = import("modules/player.lua") or {}
 local VisualsMod   = import("modules/visuals.lua") or {}
 local WorldMod     = import("modules/world.lua") or {}
 local TeleportMod  = import("modules/teleport.lua") or {}
 local TargetMod    = import("modules/target.lua") or {}
 
--- 3. אתחול ה-Menu הראשי
 local MenuInterface = Menu.init(Elements)
-
----------------------------------------------------------
--- 4. יצירת הטאבים והכפתורים החדשים (גרסה עשירה)
----------------------------------------------------------
 
 -- ==================== טאב 1: HOME ====================
 local homeTab = MenuInterface.createTab("Home", 1)
@@ -58,7 +50,22 @@ Elements.createToggleButton(hGrid, "FPS Unlocker", false, WorldMod.toggleFPS or 
 -- ==================== טאב 2: TARGET ====================
 local targetTab = MenuInterface.createTab("Target", 2)
 
--- סליידרים ומנגנוני טרגט
+-- תיבת טקסט להקלדת שם השחקן!
+if Elements.createTextBox then
+    Elements.createTextBox(targetTab, "Type Player Name Here...", function(name)
+        if TargetMod.setTargetByName then
+            TargetMod.setTargetByName(name)
+        else
+            shared.selectedTargetName = name
+            print("Target set to: " .. name)
+        end
+    end)
+end
+
+local spacer = Instance.new("Frame", targetTab)
+spacer.Size = UDim2.new(1, 0, 0, 5)
+spacer.BackgroundTransparency = 1
+
 Elements.createSlider(targetTab, "Aimbot FOV", 30, 300, 90, function(v) shared.aimbotFOV = v end)
 
 local tGrid = Instance.new("Frame", targetTab)
@@ -106,7 +113,7 @@ Elements.createToggleButton(pGrid, "Ctrl+Click TP", false, TeleportMod.toggleCtr
 Elements.createToggleButton(pGrid, "God Mode", false, PlayerMod.toggleGodMode or function() end)
 Elements.createToggleButton(pGrid, "Invisible", false, PlayerMod.toggleInvisible or function() end)
 Elements.createToggleButton(pGrid, "No Ragdoll", false, PlayerMod.toggleNoRagdoll or function() end)
-Elements.createToggleButton(pGrid, "Auto-Heal (If game allows)", false, PlayerMod.toggleAutoHeal or function() end)
+Elements.createToggleButton(pGrid, "Auto-Heal", false, PlayerMod.toggleAutoHeal or function() end)
 
 
 -- ==================== טאב 4: VISUALS ====================
@@ -122,9 +129,9 @@ g2.CellPadding = UDim2.new(0, 8, 0, 8)
 Elements.createToggleButton(vGrid, "Master ESP", false, VisualsMod.toggleMasterESP or function() end)
 Elements.createToggleButton(vGrid, "ESP Box", false, VisualsMod.toggleESPBox or function() end)
 Elements.createToggleButton(vGrid, "ESP Names", false, VisualsMod.toggleESPNames or function() end)
-Elements.createToggleButton(vGrid, "ESP Tracers (Lines)", false, VisualsMod.toggleTracers or function() end)
+Elements.createToggleButton(vGrid, "ESP Tracers", false, VisualsMod.toggleTracers or function() end)
 Elements.createToggleButton(vGrid, "Fullbright", false, VisualsMod.toggleFullbright or function() end)
-Elements.createToggleButton(vGrid, "Chams (Color Fill)", false, VisualsMod.toggleChams or function() end)
+Elements.createToggleButton(vGrid, "Chams", false, VisualsMod.toggleChams or function() end)
 
 
 -- ==================== טאב 5: WORLD ====================
@@ -175,4 +182,4 @@ Elements.addCorner(hopButton, UDim.new(0, 5))
 Elements.addStroke(hopButton, Color3.fromRGB(35, 35, 45), 1)
 hopButton.MouseButton1Click:Connect(TeleportMod.serverHop or function() end)
 
-print("🚀 [Ori Dev] ה-Mega Hub החדש והעשיר ביותר מוכן לפעולה!")
+print("🚀 [Ori Dev] ה-Mega Hub עודכן עם שדה קלט שחקן!")
