@@ -34,7 +34,7 @@ end
 local MenuInterface = Menu.init(Elements)
 
 ---------------------------------------------------------
--- הגדרות גלובליות ומערכת Fly (מצלמה + CTRL/Space/Shift)
+-- הגדרות גלובליות ומערכת Fly (מצלמה + Space עולה / CTRL יורד)
 ---------------------------------------------------------
 shared.flySpeed = shared.flySpeed or 100
 shared.isFlying = false
@@ -333,14 +333,13 @@ end)
 
 Elements.createSlider(playerTab, "Hip Height", 0, 50, 2, function(v) if PlayerMod.updateHipHeight then PlayerMod.updateHipHeight(v) end end)
 
--- תיקון: הגדלת הגובה של ה-pGrid ל-180 כדי שכל 8 הכפתורים ייכנסו ולא ייחתכו
 local pGrid = Instance.new("Frame", playerTab)
 pGrid.Size = UDim2.new(0.95, 0, 0, 180)
 pGrid.BackgroundTransparency = 1
 
 local g1 = Instance.new("UIGridLayout", pGrid) 
 g1.CellSize = UDim2.new(0.48, 0, 0, 32) 
-g1.CellPadding = UDim2.new(0, 8, 0, 8) -- תוקן ה-g1 הכפול שהיה רשום מקודם
+g1.CellPadding = UDim2.new(0, 8, 0, 8)
 
 Elements.createToggleButton(pGrid, "Fly Mode", false, function(state)
     shared.isFlying = state
