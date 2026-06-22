@@ -1,4 +1,4 @@
--- modules/player.lua (גרסה מלאה - כולל תעופה מתוקנת וזום אינסופי)
+-- modules/player.lua (גרסה מלאה ומתוקנת מפני שגיאות זום)
 
 local PlayerMod = {}
 
@@ -15,10 +15,6 @@ local bodyGyro = nil
 local noclipConnection = nil
 local infJumpConnection = nil
 local autoResetConnection = nil
-
--- שמירת ערכי הזום המקוריים של המשחק
-local originalMaxZoom = lp.MaxCameraZoomDistance
-local originalMinZoom = lp.MinCameraZoomDistance
 
 -- הגדרת ערכי ברירת מחדל גלובליים
 shared.walkSpeedValue = shared.walkSpeedValue or 16
@@ -53,15 +49,25 @@ function PlayerMod.updateHipHeight(v)
     end
 end
 
--- ביטול הגבלת הזום (אינסוף זום)
+-- ביטול הגבלת הזום (גרסה מאובטחת למניעת קריסות בקונסול)
 function PlayerMod.toggleInfiniteZoom(state)
-    if state then
-        lp.MaxCameraZoomDistance = math.huge
-        lp.MinCameraZoomDistance = 0
-    else
-        lp.MaxCameraZoomDistance = originalMaxZoom or 128
-        lp.MinCameraZoomDistance = originalMinZoom or 0.5
-    end
+    pcall(function()
+        if state then
+            lp.MaxCameraZoomDistance = math.huge
+            lp.MinCameraZoomDistance = 0
+            if workspace.CurrentCamera then
+                workspace.CurrentCamera.MaxCameraZoomDistance = math.huge
+                workspace.CurrentCamera.MinCameraZoomDistance = 0
+            end
+        else
+            lp.MaxCameraZoomDistance = 128
+            lp.MinCameraZoomDistance = 0.5
+            if workspace.CurrentCamera then
+                workspace.CurrentCamera.MaxCameraZoomDistance = 128
+                workspace.CurrentCamera.MinCameraZoomDistance = 0.5
+            end
+        end
+    end)
 end
 
 lp.CharacterAdded:Connect(function(char)
@@ -72,18 +78,26 @@ lp.CharacterAdded:Connect(function(char)
         hum.UseJumpPower = true
         hum.JumpPower = shared.jumpPowerValue 
     end
-    -- שמירה על זום אינסופי לאחר ריספאון
+    
+    -- שמירה על זום אינסופי לאחר ריספאון בצורה בטוחה
     if shared.infiniteZoomActive then
-        lp.MaxCameraZoomDistance = math.huge
-        lp.MinCameraZoomDistance = 0
+        pcall(function()
+            lp.MaxCameraZoomDistance = math.huge
+            lp.MinCameraZoomDistance = 0
+            if workspace.CurrentCamera then
+                workspace.CurrentCamera.MaxCameraZoomDistance = math.huge
+                workspace.CurrentCamera.MinCameraZoomDistance = 0
+            end
+        end)
     end
+    
     if shared.isFlying then
         task.wait(0.5)
         PlayerMod.toggleFly(true)
     end
 end)
 
--- ==================== מערכת FLY חלקה ונקייה ====================
+-- ==================== מערכת FLY חלקה ====================
 function PlayerMod.toggleFly(state)
     if flyConnection then flyConnection:Disconnect() flyConnection = nil end
     if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
