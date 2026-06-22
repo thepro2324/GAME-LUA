@@ -1,4 +1,4 @@
--- init.lua (גרסת ה-Mega Hub המתוקנת - כל הכפתורים מוצגים + Fly מבוסס מצלמה)
+-- init.lua (גרסת ה-Mega Hub המתוקנת - ערכי מקסימום משודרגים לסליידרים)
 
 -- הגדרות ה-GitHub שלך
 local GITHUB_USER = "thepro2324"
@@ -314,20 +314,23 @@ startButton.MouseButton1Click:Connect(function()
 end)
 
 
--- ==================== טאב 3: PLAYER ====================
+-- ==================== טאב 3: PLAYER (תוקנו ערכי המקסימום!) ====================
 local playerTab = MenuInterface.createTab("Player", 3)
 
-Elements.createSlider(playerTab, "Walk Speed", 16, 500, 16, function(v) 
+-- מהירות הליכה: מקסימום 2000
+Elements.createSlider(playerTab, "Walk Speed", 16, 2000, 16, function(v) 
     shared.walkSpeedValue = v 
     if PlayerMod.updateSpeed then PlayerMod.updateSpeed(v) end
 end)
 
-Elements.createSlider(playerTab, "Jump Power", 50, 1000, 50, function(v) 
+-- כוח קפיצה: מקסימום 1500
+Elements.createSlider(playerTab, "Jump Power", 50, 1500, 50, function(v) 
     shared.jumpPowerValue = v 
     if PlayerMod.updateJump then PlayerMod.updateJump(v) end
 end)
 
-Elements.createSlider(playerTab, "Fly Speed", 20, 500, 100, function(v) 
+-- מהירות תעופה: מקסימום 2000
+Elements.createSlider(playerTab, "Fly Speed", 20, 2000, 100, function(v) 
     shared.flySpeed = v 
 end)
 
@@ -423,4 +426,4 @@ Elements.addCorner(hopButton, UDim.new(0, 5))
 Elements.addStroke(hopButton, Color3.fromRGB(35, 35, 45), 1)
 hopButton.MouseButton1Click:Connect(TeleportMod.serverHop or function() end)
 
-print("🚀 [Ori Dev] קובץ init.lua תוקן ונטען במלואו בהצלחה!")
+print("🚀 [Ori Dev] קובץ init.lua תוקן וערכי המקסימום עודכנו!")
