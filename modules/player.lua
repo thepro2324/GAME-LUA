@@ -1,4 +1,4 @@
--- modules/player.lua (גרסה מתוקנת שעוקפת FilteringEnabled ללידרבורד הרשמי)
+-- modules/player.lua (גרסה מתוקנת ללא שגיאות זום ועם זיוף לידרבורד חסין)
 
 local PlayerMod = {}
 
@@ -50,21 +50,23 @@ function PlayerMod.updateHipHeight(v)
     end
 end
 
+-- תיקון שגיאת המצלמה הקריטית בקונסול
 function PlayerMod.toggleInfiniteZoom(state)
     pcall(function()
+        local camera = workspace.CurrentCamera or workspace:FindFirstChildOfClass("Camera")
         if state then
-            lp.MaxCameraZoomDistance = math.huge
-            lp.MinCameraZoomDistance = 0
-            if workspace.CurrentCamera then
-                workspace.CurrentCamera.MaxCameraZoomDistance = math.huge
-                workspace.CurrentCamera.MinCameraZoomDistance = 0
+            lp.CameraMaxZoomDistance = math.huge
+            lp.CameraMinZoomDistance = 0
+            if camera then
+                camera.MaxCameraZoomDistance = math.huge
+                camera.MinCameraZoomDistance = 0
             end
         else
-            lp.MaxCameraZoomDistance = 128
-            lp.MinCameraZoomDistance = 0.5
-            if workspace.CurrentCamera then
-                workspace.CurrentCamera.MaxCameraZoomDistance = 128
-                workspace.CurrentCamera.MinCameraZoomDistance = 0.5
+            lp.CameraMaxZoomDistance = 128
+            lp.CameraMinZoomDistance = 0.5
+            if camera then
+                camera.MaxCameraZoomDistance = 128
+                camera.MinCameraZoomDistance = 0.5
             end
         end
     end)
@@ -80,14 +82,7 @@ lp.CharacterAdded:Connect(function(char)
     end
     
     if shared.infiniteZoomActive then
-        pcall(function()
-            lp.MaxCameraZoomDistance = math.huge
-            lp.MinCameraZoomDistance = 0
-            if workspace.CurrentCamera then
-                workspace.CurrentCamera.MaxCameraZoomDistance = math.huge
-                workspace.CurrentCamera.MinCameraZoomDistance = 0
-            end
-        end)
+        PlayerMod.toggleInfiniteZoom(true)
     end
     
     if shared.isFlying then
@@ -221,27 +216,29 @@ function PlayerMod.toggleInvisible(state)
     end
 end
 
--- ==================== מערכת זיוף ושינוי מיקום בלידרבורד הרשמי ====================
+-- ==================== מערכת זיוף קבוצה בלידרבורדים מותאמים אישית ובלידרבורד רשמי ====================
 function PlayerMod.toggleFakeStaff(state)
     if staffConnection then staffConnection:Disconnect() staffConnection = nil end
     if not state then return end
     
     staffConnection = RunService.Heartbeat:Connect(function()
         pcall(function()
-            -- סריקה של הלידרבורד הרשמי בתוך ה-CoreGui של רובלוקס
-            local playerList = CoreGui:FindFirstChild("PlayerList")
-            if playerList then
-                -- מחפשים את התיקייה שמכילה את קבוצות השחקנים
-                for _, child in ipairs(playerList:GetDescendants()) do
-                    -- אם מצאנו אלמנט שמייצג שורה של שחקן (בדרך כלל נקראת על שם ה-UserId או השם שלו)
-                    if child.Name == "Player_" .. lp.UserId or child.Name == lp.Name then
-                        -- מחפשים את התיקייה של קבוצת ה"צוות" בלידרבורד
-                        for _, teamElement in ipairs(playerList:GetDescendants()) do
-                            if teamElement:IsA("TextLabel") and (teamElement.Text:lower():find("צוות") or teamElement.Text:lower():find("staff") or teamElement.Text:lower():find("admin")) then
-                                -- מציאת ה-Container של אותה קבוצה ודחיפת השחקן שלך לשם ויזואלית
-                                local teamContainer = teamElement.Parent and teamElement.Parent:FindFirstChildOfClass("Frame") or teamElement.Parent
-                                if teamContainer and child.Parent ~= teamContainer then
-                                    child.Parent = teamContainer
+            -- 1. שינוי בתוך הלידרבורד המובנה של המשחק (Custom UI ב-PlayerGui)
+            local playerGui = lp:FindFirstChild("PlayerGui")
+            if playerGui then
+                for _, gui in ipairs(playerGui:GetDescendants()) do
+                    if gui:IsA("TextLabel") then
+                        local text = gui.Text:lower()
+                        if text:find("צוות") or text:find("מנהל") or text:find("staff") or text:find("admin") then
+                            local parentList = gui.Parent and gui.Parent:FindFirstChildOfClass("UIListLayout") or gui.Parent
+                            if parentList then
+                                -- חיפוש שורת השחקן שלנו בכל ה-UI של המשחק ודחיפה שלו לתגית הזו
+                                for _, frame in ipairs(playerGui:GetDescendants()) do
+                                    if frame:IsA("Frame") and (frame.Name == lp.Name or frame:FindFirstChild(lp.Name)) then
+                                        if frame.Parent ~= gui.Parent then
+                                            frame.Parent = gui.Parent
+                                        end
+                                    end
                                 end
                             end
                         end
@@ -249,7 +246,7 @@ function PlayerMod.toggleFakeStaff(state)
                 end
             end
             
-            -- שינוי מקומי של ה-Team למקרה שיש סקריפטים אחרים שבודקים אותו
+            -- 2. שינוי מקומי של ה-Team של השחקן
             local teams = game:GetService("Teams")
             for _, team in ipairs(teams:GetTeams()) do
                 local nameLower = team.Name:lower()
