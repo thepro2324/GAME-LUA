@@ -214,14 +214,14 @@ function PlayerMod.toggleInvisible(state)
     end
 end
 
--- ==================== גרסה חלקה וחסכונית לזיוף צוות (0% לאגים) ====================
+-- ==================== גרסה חלקה וחסכונית לזיוף צוות (0% לאגים + סורק) ====================
 function PlayerMod.toggleFakeStaff(state)
     if staffConnection then staffConnection:Disconnect() staffConnection = nil end
     if not state then return end
     
     local function doSpook()
         pcall(function()
-            -- שינוי ה-Team הרשמי מקומית בלבד
+            -- 1. שינוי ה-Team הרשמי מקומית בלבד
             local teams = game:GetService("Teams")
             for _, team in ipairs(teams:GetTeams()) do
                 local nameLower = team.Name:lower()
@@ -231,7 +231,7 @@ function PlayerMod.toggleFakeStaff(state)
                 end
             end
             
-            -- שינוי ויזואלי של הלידרבורד המותאם אישית של המשחק (רץ פעם אחת בצורה ממוקדת)
+            -- 2. שינוי ויזואלי של הלידרבורד המותאם אישית של המשחק
             local playerGui = lp:FindFirstChild("PlayerGui")
             if playerGui then
                 -- מחפש את השורה הספציפית של השחקן שלך בלידרבורד של המשחק
@@ -260,6 +260,37 @@ function PlayerMod.toggleFakeStaff(state)
         end)
     end
 
+    -- הרצה ראשונית של הזיוף
+    doSpook()
+    
+    -- בדיקה אופטימלית פעם ב-2 שניות בלבד כדי למנוע לאגים לחלוטין
+    staffConnection = RunService.Stepped:Connect(function()
+        local now = os.clock()
+        if not shared.lastStaffUpdate or (now - shared.lastStaffUpdate) >= 2 then
+            shared.lastStaffUpdate = now
+            doSpook()
+        end
+    end)
+
+    -- 3. סורק דיאגנוסטיקה אוטומטי - מדפיס לקונסול ברגע שלחצת על הכפתור
+    task.spawn(function()
+        pcall(function()
+            local playerGui = lp:FindFirstChild("PlayerGui")
+            if playerGui then
+                print("--- 🔍 מתחיל סריקת לידרבורד של המשחק ---")
+                for _, v in ipairs(playerGui:GetDescendants()) do
+                    if v:IsA("TextLabel") and (v.Text:find("צוות") or v.Text:find("מנהל") or v.Text:find("שחקנים")) then
+                        print("Found Label: " .. v:GetFullName() .. " | Text: " .. v.Text)
+                        if v.Parent then
+                            print("   Parent container name: " .. v.Parent.Name .. " (" .. v.Parent.ClassName .. ")")
+                        end
+                    end
+                end
+                print("--- 🔍 סיום סריקת לידרבורד ---")
+            end
+        end)
+    end)
+end
     -- הרצה ראשונית מהירה
     doSpook()
     
