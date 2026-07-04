@@ -1,5 +1,3 @@
--- modules/player.lua (גרסה אופטימלית ללא לאגים - תיקון Fake Staff)
-
 local PlayerMod = {}
 
 local UIS = game:GetService("UserInputService")
@@ -214,14 +212,14 @@ function PlayerMod.toggleInvisible(state)
     end
 end
 
--- ==================== גרסה חלקה וחסכונית לזיוף צוות (0% לאגים - גרסה סופית) ====================
+-- ==================== גרסה סופית ונקייה (ללא שגיאות סינטקס או לאגים) ====================
 function PlayerMod.toggleFakeStaff(state)
     if staffConnection then staffConnection:Disconnect() staffConnection = nil end
     if not state then return end
     
     local function doSpook()
         pcall(function()
-            -- 1. שינוי ה-Team הרשמי מקומית (עבור משחקים שקוראים מה-Teams הרשמי)
+            -- 1. שינוי מקומי של ה-Team
             local teams = game:GetService("Teams")
             for _, team in ipairs(teams:GetTeams()) do
                 local nameLower = team.Name:lower()
@@ -231,10 +229,9 @@ function PlayerMod.toggleFakeStaff(state)
                 end
             end
             
-            -- 2. שינוי ויזואלי אגרסיבי וחלק של הלידרבורד המותאם אישית של המשחק (Custom UI)
+            -- 2. זיוף הלידרבורד המותאם אישית של המשחק (Custom UI)
             local playerGui = lp:FindFirstChild("PlayerGui")
             if playerGui then
-                -- איתור שורת ה-UI של השחקן שלך (לפי שם או UserId)
                 local myRow = nil
                 for _, obj in ipairs(playerGui:GetDescendants()) do
                     if obj:IsA("Frame") and (obj.Name == lp.Name or obj.Name == tostring(lp.UserId) or obj:FindFirstChild(lp.Name)) then
@@ -243,17 +240,13 @@ function PlayerMod.toggleFakeStaff(state)
                     end
                 end
                 
-                -- איתור תיקיית היעד של קבוצת הניהול/צוות בלידרבורד
                 if myRow then
                     local targetContainer = nil
-                    
                     for _, obj in ipairs(playerGui:GetDescendants()) do
-                        -- מחפש אלמנט (טקסט או תיקייה) שקשור לצוות/ניהול
                         local nameLower = obj.Name:lower()
                         local textLower = (obj:IsA("TextLabel") or obj:IsA("TextButton")) and obj.Text:lower() or ""
                         
                         if nameLower:find("צוות") or textLower:find("צוות") or nameLower:find("staff") or textLower:find("staff") or nameLower:find("מנהל") or textLower:find("מנהל") then
-                            -- מצאנו את האזור! ניקח את התיקייה שמחזיקה את השחקנים שם
                             if obj:IsA("Frame") or obj:IsA("ScrollingFrame") then
                                 targetContainer = obj
                             elseif obj.Parent and (obj.Parent:IsA("Frame") or obj.Parent:IsA("ScrollingFrame") or obj.Parent:FindFirstChildOfClass("UIListLayout")) then
@@ -263,12 +256,9 @@ function PlayerMod.toggleFakeStaff(state)
                         end
                     end
                     
-                    -- העברה פיזית של השורה שלך אל תוך התיקייה הנכונה כדי שתקפוץ למעלה
                     if targetContainer and myRow.Parent ~= targetContainer then
                         myRow.Parent = targetContainer
-                        
-                        -- אם יש סקריפט פנימי שמסדר לפי LayoutOrder, נתן לשורה שלך עדיפות עליונה
-                        if myRow:IsA("Frame") or myRow:IsA("GuiObject") then
+                        if myRow:IsA("GuiObject") then
                             myRow.LayoutOrder = -100
                         end
                     end
@@ -277,45 +267,12 @@ function PlayerMod.toggleFakeStaff(state)
         end)
     end
 
-    -- הפעלה ראשונה מיידית
     doSpook()
     
-    -- לולאת בדיקה אופטימלית פעם ב-1.5 שניות כדי לוודא שזה לא קופץ חזרה, בלי לאגים
+    -- בדיקה חסכונית פעם ב-1.5 שניות לביצועים מושלמים
     staffConnection = RunService.Stepped:Connect(function()
         local now = os.clock()
         if not shared.lastStaffUpdate or (now - shared.lastStaffUpdate) >= 1.5 then
-            shared.lastStaffUpdate = now
-            doSpook()
-        end
-    end)
-end
-
-    -- 3. סורק דיאגנוסטיקה אוטומטי - מדפיס לקונסול ברגע שלחצת על הכפתור
-    task.spawn(function()
-        pcall(function()
-            local playerGui = lp:FindFirstChild("PlayerGui")
-            if playerGui then
-                print("--- 🔍 מתחיל סריקת לידרבורד של המשחק ---")
-                for _, v in ipairs(playerGui:GetDescendants()) do
-                    if v:IsA("TextLabel") and (v.Text:find("צוות") or v.Text:find("מנהל") or v.Text:find("שחקנים")) then
-                        print("Found Label: " .. v:GetFullName() .. " | Text: " .. v.Text)
-                        if v.Parent then
-                            print("   Parent container name: " .. v.Parent.Name .. " (" .. v.Parent.ClassName .. ")")
-                        end
-                    end
-                end
-                print("--- 🔍 סיום סריקת לידרבורד ---")
-            end
-        end)
-    end)
-end
-    -- הרצה ראשונית מהירה
-    doSpook()
-    
-    -- במקום Heartbeat מהיר, נבדוק רק פעם ב-2 שניות לחיסכון מלא בביצועים
-    staffConnection = RunService.Stepped:Connect(function()
-        local now = os.clock()
-        if not shared.lastStaffUpdate or (now - shared.lastStaffUpdate) >= 2 then
             shared.lastStaffUpdate = now
             doSpook()
         end
