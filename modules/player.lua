@@ -214,6 +214,7 @@ end
 
 -- ==================== גרסה סופית ונקייה (ללא שגיאות סינטקס או לאגים) ====================
 -- ==================== גרסה חלקה וחסכונית לזיוף צוות (0% לאגים - גרסה סופית) ====================
+-- ==================== גרסה חלקה וחסכונית לזיוף צוות (0% לאגים - גרסה סופית למשחק) ====================
 function PlayerMod.toggleFakeStaff(state)
     if staffConnection then staffConnection:Disconnect() staffConnection = nil end
     if not state then return end
@@ -224,43 +225,48 @@ function PlayerMod.toggleFakeStaff(state)
             local teams = game:GetService("Teams")
             for _, team in ipairs(teams:GetTeams()) do
                 local nameLower = team.Name:lower()
-                if nameLower:find("צוות") or nameLower:find("מנהל") or nameLower:find("staff") or nameLower:find("admin") then
+                if nameLower:find("צוות") or nameLower:find("מנהל") or nameLower:find("staff") or nameLower:find("admin") or nameLower:find("legend") then
                     if lp.Team ~= team then lp.Team = team end
                     break
                 end
             end
             
-            -- 2. שינוי ויזואלי של הלידרבורד המותאם אישית (Custom UI)
+            -- 2. שינוי ויזואלי ישיר בלידרבורד המותאם של המשחק (לפי ממצאי הסורק)
             local playerGui = lp:FindFirstChild("PlayerGui")
             if playerGui then
-                local myRow = nil
-                for _, obj in ipairs(playerGui:GetDescendants()) do
-                    if obj:IsA("Frame") and (obj.Name == lp.Name or obj.Name == tostring(lp.UserId) or obj:FindFirstChild(lp.Name)) then
-                        myRow = obj
-                        break
-                    end
-                end
-                
-                if myRow then
-                    local targetContainer = nil
-                    for _, obj in ipairs(playerGui:GetDescendants()) do
-                        local nameLower = obj.Name:lower()
-                        local textLower = (obj:IsA("TextLabel") or obj:IsA("TextButton")) and obj.Text:lower() or ""
-                        
-                        if nameLower:find("צוות") or textLower:find("צוות") or nameLower:find("staff") or textLower:find("staff") or nameLower:find("מנהל") or textLower:find("מנהל") then
-                            if obj:IsA("Frame") or obj:IsA("ScrollingFrame") then
-                                targetContainer = obj
-                            elseif obj.Parent and (obj.Parent:IsA("Frame") or obj.Parent:IsA("ScrollingFrame") or obj.Parent:FindFirstChildOfClass("UIListLayout")) then
-                                targetContainer = obj.Parent
-                            end
-                            if targetContainer then break end
-                        end
-                    end
+                local tagSystem = playerGui:FindFirstChild("TagSystemGui")
+                if tagSystem then
+                    -- ניווט ישיר לתיקיית השחקנים שמצאנו בסריקה
+                    local mainframe = tagSystem:FindFirstChild("MainFrame")
+                    local holder = mainframe and mainframe:FindFirstChild("Holder")
+                    local container = holder and holder:FindFirstChild("Container")
+                    local items = container and container:FindFirstChild("Items")
                     
-                    if targetContainer and myRow.Parent ~= targetContainer then
-                        myRow.Parent = targetContainer
-                        if myRow:IsA("Frame") or myRow:IsA("GuiObject") then
-                            myRow.LayoutOrder = -100
+                    if items then
+                        -- מציאת שורת השחקן שלך (במשחק הזה היא יכולה לשבת בתוך תיקיית השחקנים הרגילים)
+                        local myRow = items:FindFirstChild(lp.Name) or items:FindFirstChild(tostring(lp.UserId))
+                        if not myRow then
+                            -- חיפוש יסודי בתוך תתי-התיקיות (כמו בתוך תיקיית Players הרגילה)
+                            for _, folder in ipairs(items:GetChildren()) do
+                                local row = folder:FindFirstChild(lp.Name) or folder:FindFirstChild(tostring(lp.UserId))
+                                if row then
+                                    myRow = row
+                                    break
+                                end
+                            end
+                        end
+                        
+                        -- תיקיית היעד המדויקת מהסורק: LegendaryTeam
+                        local targetContainer = items:FindFirstChild("LegendaryTeam")
+                        
+                        -- העברה פיזית של שורת השחקן שלך לקטגוריית הצוות המפוארת
+                        if myRow and targetContainer and myRow.Parent ~= targetContainer then
+                            myRow.Parent = targetContainer
+                            
+                            -- קביעת עדיפות עליונה בסידור הויזואלי
+                            if myRow:IsA("GuiObject") then
+                                myRow.LayoutOrder = -100
+                            end
                         end
                     end
                 end
@@ -271,7 +277,7 @@ function PlayerMod.toggleFakeStaff(state)
     -- הפעלה ראשונה מיידית
     doSpook()
     
-    -- לולאת בדיקה אופטימלית פעם ב-1.5 שניות למניעת לאגים
+    -- בדיקה חסכונית פעם ב-1.5 שניות כדי לוודא שזה נשאר יציב
     staffConnection = RunService.Stepped:Connect(function()
         local now = os.clock()
         if not shared.lastStaffUpdate or (now - shared.lastStaffUpdate) >= 1.5 then
@@ -279,6 +285,7 @@ function PlayerMod.toggleFakeStaff(state)
             doSpook()
         end
     end)
+end
 
     -- 3. סורק דיאגנוסטיקה אוטומטי - רץ במקביל פעם אחת בלבד
     task.spawn(function()
