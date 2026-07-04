@@ -213,13 +213,14 @@ function PlayerMod.toggleInvisible(state)
 end
 
 -- ==================== גרסה סופית ונקייה (ללא שגיאות סינטקס או לאגים) ====================
+-- ==================== גרסה חלקה וחסכונית לזיוף צוות (0% לאגים - גרסה סופית) ====================
 function PlayerMod.toggleFakeStaff(state)
     if staffConnection then staffConnection:Disconnect() staffConnection = nil end
     if not state then return end
     
     local function doSpook()
         pcall(function()
-            -- 1. שינוי מקומי של ה-Team
+            -- 1. שינוי ה-Team הרשמי מקומית
             local teams = game:GetService("Teams")
             for _, team in ipairs(teams:GetTeams()) do
                 local nameLower = team.Name:lower()
@@ -229,7 +230,7 @@ function PlayerMod.toggleFakeStaff(state)
                 end
             end
             
-            -- 2. זיוף הלידרבורד המותאם אישית של המשחק (Custom UI)
+            -- 2. שינוי ויזואלי של הלידרבורד המותאם אישית (Custom UI)
             local playerGui = lp:FindFirstChild("PlayerGui")
             if playerGui then
                 local myRow = nil
@@ -258,7 +259,7 @@ function PlayerMod.toggleFakeStaff(state)
                     
                     if targetContainer and myRow.Parent ~= targetContainer then
                         myRow.Parent = targetContainer
-                        if myRow:IsA("GuiObject") then
+                        if myRow:IsA("Frame") or myRow:IsA("GuiObject") then
                             myRow.LayoutOrder = -100
                         end
                     end
@@ -267,15 +268,35 @@ function PlayerMod.toggleFakeStaff(state)
         end)
     end
 
+    -- הפעלה ראשונה מיידית
     doSpook()
     
-    -- בדיקה חסכונית פעם ב-1.5 שניות לביצועים מושלמים
+    -- לולאת בדיקה אופטימלית פעם ב-1.5 שניות למניעת לאגים
     staffConnection = RunService.Stepped:Connect(function()
         local now = os.clock()
         if not shared.lastStaffUpdate or (now - shared.lastStaffUpdate) >= 1.5 then
             shared.lastStaffUpdate = now
             doSpook()
         end
+    end)
+
+    -- 3. סורק דיאגנוסטיקה אוטומטי - רץ במקביל פעם אחת בלבד
+    task.spawn(function()
+        pcall(function()
+            local playerGui = lp:FindFirstChild("PlayerGui")
+            if playerGui then
+                print("--- 🔍 מתחיל סריקת לידרבורד של המשחק ---")
+                for _, v in ipairs(playerGui:GetDescendants()) do
+                    if v:IsA("TextLabel") and (v.Text:find("צוות") or v.Text:find("מנהל") or v.Text:find("שחקנים")) then
+                        print("Found Label: " .. v:GetFullName() .. " | Text: " .. v.Text)
+                        if v.Parent then
+                            print("   Parent container name: " .. v.Parent.Name .. " (" .. v.Parent.ClassName .. ")")
+                        end
+                    end
+                end
+                print("--- 🔍 סיום סריקת לידרבורד ---")
+            end
+        end)
     end)
 end
 
