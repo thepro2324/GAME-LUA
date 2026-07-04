@@ -326,24 +326,24 @@ startButton.MouseButton1Click:Connect(function()
 end)
 
 -- ==================== טאב 3: PLAYER ====================
+-- ==================== טאב 3: PLAYER ====================
 local playerTab = MenuInterface.createTab("Player", 3)
 
--- יצירת תיקיית גלילה פנימית כדי ששום כפתור לא ייחתך בגלל הסליידרים
+-- יצירת תיקיית גלילה פנימית נקייה ללא אלמנטים כפולים מחוצה לה
 local playerScroll = Instance.new("ScrollingFrame")
 playerScroll.Parent = playerTab
 playerScroll.Size = UDim2.new(1, 0, 1, 0)
 playerScroll.BackgroundTransparency = 1
 playerScroll.BorderSizePixel = 0
 playerScroll.ScrollBarThickness = 5
-playerScroll.CanvasSize = UDim2.new(0, 0, 0, 480) -- גובה גלילה מספיק רחב להכל
+playerScroll.CanvasSize = UDim2.new(0, 0, 0, 480)
 
--- שינוי פריסת הרשימה בתוך התיקייה הנגללת
 local scrollLayout = Instance.new("UIListLayout")
 scrollLayout.Parent = playerScroll
 scrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
 scrollLayout.Padding = UDim.new(0, 10)
 
--- יצירת האלמנטים ישירות בתוך תיקיית הגלילה (playerScroll)
+-- יצירת הסליידרים בתוך הגלילה
 Elements.createSlider(playerScroll, "Walk Speed", 16, 2000, 16, function(v) 
     shared.walkSpeedValue = v 
     safeCall(PlayerMod, "updateSpeed", v)
@@ -360,9 +360,9 @@ end)
 
 Elements.createSlider(playerScroll, "Hip Height", 0, 50, 2, function(v) safeCall(PlayerMod, "updateHipHeight", v) end)
 
--- גריד הכפתורים ממוקם כעת בתוך תיקיית הגלילה
+-- גריד הכפתורים
 local pGrid = Instance.new("Frame", playerScroll)
-pGrid.Size = UDim2.new(0.95, 0, 0, 200) -- הגובה מותאם דינמית בתוך הגלילה
+pGrid.Size = UDim2.new(0.95, 0, 0, 220)
 pGrid.BackgroundTransparency = 1
 
 local g1 = Instance.new("UIGridLayout", pGrid) 
@@ -387,10 +387,6 @@ Elements.createToggleButton(pGrid, "Infinite Zoom", false, function(state)
     safeCall(PlayerMod, "toggleInfiniteZoom", state)
 end)
 
-Elements.createToggleButton(pGrid, "Fake Staff LB", false, function(state)
-    safeCall(PlayerMod, "toggleFakeStaff", state)
-end)
--- התיקון כאן: הפנייה ישירה ללוגיקה החדשה בתוך מודול שחקן
 Elements.createToggleButton(pGrid, "Fake Staff LB", false, function(state)
     safeCall(PlayerMod, "toggleFakeStaff", state)
 end)
