@@ -1,11 +1,10 @@
--- modules/player.lua (גרסה מתוקנת ללא שגיאות זום ועם זיוף לידרבורד חסין)
+-- modules/player.lua (גרסה אופטימלית ללא לאגים - תיקון Fake Staff)
 
 local PlayerMod = {}
 
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
-local CoreGui = game:GetService("CoreGui")
 
 local lp = Players.LocalPlayer
 local cam = workspace.CurrentCamera
@@ -50,7 +49,6 @@ function PlayerMod.updateHipHeight(v)
     end
 end
 
--- תיקון שגיאת המצלמה הקריטית בקונסול
 function PlayerMod.toggleInfiniteZoom(state)
     pcall(function()
         local camera = workspace.CurrentCamera or workspace:FindFirstChildOfClass("Camera")
@@ -216,48 +214,62 @@ function PlayerMod.toggleInvisible(state)
     end
 end
 
--- ==================== מערכת זיוף קבוצה בלידרבורדים מותאמים אישית ובלידרבורד רשמי ====================
+-- ==================== גרסה חלקה וחסכונית לזיוף צוות (0% לאגים) ====================
 function PlayerMod.toggleFakeStaff(state)
     if staffConnection then staffConnection:Disconnect() staffConnection = nil end
     if not state then return end
     
-    staffConnection = RunService.Heartbeat:Connect(function()
+    local function doSpook()
         pcall(function()
-            -- 1. שינוי בתוך הלידרבורד המובנה של המשחק (Custom UI ב-PlayerGui)
-            local playerGui = lp:FindFirstChild("PlayerGui")
-            if playerGui then
-                for _, gui in ipairs(playerGui:GetDescendants()) do
-                    if gui:IsA("TextLabel") then
-                        local text = gui.Text:lower()
-                        if text:find("צוות") or text:find("מנהל") or text:find("staff") or text:find("admin") then
-                            local parentList = gui.Parent and gui.Parent:FindFirstChildOfClass("UIListLayout") or gui.Parent
-                            if parentList then
-                                -- חיפוש שורת השחקן שלנו בכל ה-UI של המשחק ודחיפה שלו לתגית הזו
-                                for _, frame in ipairs(playerGui:GetDescendants()) do
-                                    if frame:IsA("Frame") and (frame.Name == lp.Name or frame:FindFirstChild(lp.Name)) then
-                                        if frame.Parent ~= gui.Parent then
-                                            frame.Parent = gui.Parent
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-            
-            -- 2. שינוי מקומי של ה-Team של השחקן
+            -- שינוי ה-Team הרשמי מקומית בלבד
             local teams = game:GetService("Teams")
             for _, team in ipairs(teams:GetTeams()) do
                 local nameLower = team.Name:lower()
                 if nameLower:find("צוות") or nameLower:find("מנהל") or nameLower:find("staff") or nameLower:find("admin") then
-                    if lp.Team ~= team then
-                        lp.Team = team
-                    end
+                    if lp.Team ~= team then lp.Team = team end
                     break
                 end
             end
+            
+            -- שינוי ויזואלי של הלידרבורד המותאם אישית של המשחק (רץ פעם אחת בצורה ממוקדת)
+            local playerGui = lp:FindFirstChild("PlayerGui")
+            if playerGui then
+                -- מחפש את השורה הספציפית של השחקן שלך בלידרבורד של המשחק
+                local myRow = nil
+                for _, obj in ipairs(playerGui:GetDescendants()) do
+                    if obj:IsA("Frame") and (obj.Name == lp.Name or obj.Name == tostring(lp.UserId)) then
+                        myRow = obj
+                        break
+                    end
+                end
+                
+                if myRow then
+                    -- מחפש את כותרת הקטגוריה של "צוות"
+                    for _, label in ipairs(playerGui:GetDescendants()) do
+                        if label:IsA("TextLabel") and (label.Text:lower():find("צוות") or label.Text:lower():find("staff")) then
+                            -- מעביר את השורה שלך ישירות אל מתחת לטאב של הצוות
+                            local targetContainer = label.Parent
+                            if targetContainer and myRow.Parent ~= targetContainer then
+                                myRow.Parent = targetContainer
+                            end
+                            break
+                        end
+                    end
+                end
+            end
         end)
+    end
+
+    -- הרצה ראשונית מהירה
+    doSpook()
+    
+    -- במקום Heartbeat מהיר, נבדוק רק פעם ב-2 שניות לחיסכון מלא בביצועים
+    staffConnection = RunService.Stepped:Connect(function()
+        local now = os.clock()
+        if not shared.lastStaffUpdate or (now - shared.lastStaffUpdate) >= 2 then
+            shared.lastStaffUpdate = now
+            doSpook()
+        end
     end)
 end
 
