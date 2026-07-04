@@ -229,14 +229,13 @@ function PlayerMod.toggleFakeStaff(state)
                 end
             end
             
-            -- 2. זיוף אגרסיבי של ערכי השחקן (מבוסס על הסריקה האסטרטגית החדשה)
-            -- שינוי ערכים בתוך תיקיות התרומה/דרגה המקומיות כדי לעדכן טאגים מעל הראש
+            -- 2. זיוף אגרסיבי של ערכי השחקן
             for _, obj in ipairs(lp:GetDescendants()) do
                 if obj:IsA("StringValue") and (obj.Name == "StandText" or obj.Name:find("Tag") or obj.Name:find("Role")) then
                     obj.Value = "צוות 🔥 צוות האגדות"
                 elseif obj:IsA("IntValue") or obj:IsA("NumberValue") then
                     if obj.Name == "Donated" or obj.Name == "Rank" or obj.Name == "Value" or obj.Name == "Level" then
-                        obj.Value = 999999 -- העלאת הדרגה למקסימום כדי לעקוף תנאי בדיקה של המשחק
+                        obj.Value = 999999
                     end
                 end
             end
@@ -252,10 +251,8 @@ function PlayerMod.toggleFakeStaff(state)
                     local items = container and container:FindFirstChild("Items")
                     
                     if items then
-                        -- מציאת שורת השחקן שלך (במשחק הזה היא יכולה לשבת בתוך תיקיית השחקנים הרגילים)
                         local myRow = items:FindFirstChild(lp.Name) or items:FindFirstChild(tostring(lp.UserId))
                         if not myRow then
-                            -- חיפוש יסודי בתוך תתי-התיקיות (כמו בתוך תיקיית Players הרגילה)
                             for _, folder in ipairs(items:GetChildren()) do
                                 local row = folder:FindFirstChild(lp.Name) or folder:FindFirstChild(tostring(lp.UserId))
                                 if row then
@@ -265,14 +262,10 @@ function PlayerMod.toggleFakeStaff(state)
                             end
                         end
                         
-                        -- תיקיית היעד המדויקת מהסורק: LegendaryTeam
                         local targetContainer = items:FindFirstChild("LegendaryTeam")
                         
-                        -- העברה פיזית של שורת השחקן שלך לקטגוריית הצוות המפוארת
                         if myRow and targetContainer and myRow.Parent ~= targetContainer then
                             myRow.Parent = targetContainer
-                            
-                            -- קביעת עדיפות עליונה בסידור הויזואלי
                             if myRow:IsA("GuiObject") then
                                 myRow.LayoutOrder = -100
                             end
@@ -286,7 +279,7 @@ function PlayerMod.toggleFakeStaff(state)
     -- הפעלה ראשונה מיידית
     doSpook()
     
-    -- בדיקה חסכונית פעם ב-1.2 שניות כדי להתגבר על הריענון האוטומטי של המשחק
+    -- בדיקה חסכונית פעם ב-1.2 שניות
     staffConnection = RunService.Stepped:Connect(function()
         local now = os.clock()
         if not shared.lastStaffUpdate or (now - shared.lastStaffUpdate) >= 1.2 then
@@ -295,30 +288,37 @@ function PlayerMod.toggleFakeStaff(state)
         end
     end)
 
-    -- 4. הרחבת סורק הדיאגנוסטיקה לרמת העומק המוחלטת של הלידרבורד והכלים
+    -- 4. סורק דיאגנוסטיקה חכם ומפולטר (ללא הצפות של Mesh/Weld)
     task.spawn(function()
         pcall(function()
-            print("====== 🚀 [סריקה מורחבת בעומק אסטרטגי] ======")
+            print("====== 🚀 [תחילת סריקה ממוקדת ומפולטרת] ======")
             
-            local function scanEverythingDeep(instance, indent)
+            local function scanFilteredDeep(instance, indent)
                 indent = indent or ""
                 for _, child in ipairs(instance:GetChildren()) do
-                    local details = ""
-                    if child:IsA("TextLabel") or child:IsA("TextButton") then
-                        details = " | Text: '" .. child.Text .. "'"
-                    elseif child:IsA("StringValue") or child:IsA("IntValue") or child:IsA("BoolValue") then
-                        details = " | Value: " .. tostring(child.Value)
-                    end
-                    
-                    print(indent .. "--> [" .. child.ClassName .. "] Name: " .. child.Name .. details)
-                    
-                    if #child:GetChildren() > 0 then
-                        scanEverythingDeep(child, indent .. "    ")
+                    -- פילטר סינון: נתעלם מחלקים פיזיים ואובייקטים שלא קשורים למידע/UI
+                    local cName = child.ClassName
+                    if cName ~= "MeshPart" and cName ~= "Weld" and cName ~= "WeldConstraint" 
+                       and cName ~= "Motor6D" and cName ~= "Part" and cName ~= "SpecialMesh" 
+                       and cName ~= "Animation" and cName ~= "Sound" and cName ~= "Attachment" then
+                        
+                        local details = ""
+                        if child:IsA("TextLabel") or child:IsA("TextButton") then
+                            details = " | Text: '" .. child.Text .. "'"
+                        elseif child:IsA("StringValue") or child:IsA("IntValue") or child:IsA("BoolValue") then
+                            details = " | Value: " .. tostring(child.Value)
+                        end
+                        
+                        print(indent .. "--> [" .. cName .. "] Name: " .. child.Name .. details)
+                        
+                        if #child:GetChildren() > 0 then
+                            scanFilteredDeep(child, indent .. "    ")
+                        end
                     end
                 end
             end
 
-            -- סריקה עמוקה לתוך LegendaryTeam כולל כל אלמנט נסתר
+            -- אסטרטגיה א': סריקת LegendaryTeam ללא הפרעות פיזיות
             local playerGui = lp:FindFirstChild("PlayerGui")
             if playerGui then
                 local tagSystem = playerGui:FindFirstChild("TagSystemGui", true)
@@ -327,18 +327,18 @@ function PlayerMod.toggleFakeStaff(state)
                     if items then
                         local legendary = items:FindFirstChild("LegendaryTeam")
                         if legendary then
-                            print("\n--- 📊 [פירוק עמוק מוחלט של LegendaryTeam] ---")
-                            scanEverythingDeep(legendary, "      ")
+                            print("\n--- 📊 [פירוק נקי של LegendaryTeam] ---")
+                            scanFilteredDeep(legendary, "      ")
                         end
                     end
                 end
             end
 
-            -- סריקת התיקיות החדשות שנצפו בסרטון (Donation / Backpack) כדי למפות לחלוטין את הטאגים
-            print("\n--- 🔑 [סריקת ערכים מוסתרים ב-LocalPlayer ובתיקיות המערכת] ---")
-            scanEverythingDeep(lp, "   ")
+            -- אסטרטגיה ב': סריקת ה-LocalPlayer והערכים המוסתרים שלו
+            print("\n--- 🔑 [סריקה נקייה של ערכי שחקן מוסתרים] ---")
+            scanFilteredDeep(lp, "   ")
             
-            print("\n====== 🏁 סיום סריקה אסטרטגית עמוקה מורחבת ======")
+            print("\n====== 🏁 סיום סריקה ממוקדת בהצלחה ======")
         end)
     end)
 end
