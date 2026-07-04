@@ -344,8 +344,9 @@ end)
 
 Elements.createSlider(playerTab, "Hip Height", 0, 50, 2, function(v) safeCall(PlayerMod, "updateHipHeight", v) end)
 
+-- הגדלנו את הגובה מ-260 ל-320 כדי לתת מקום לשורה החדשה של הכפתור
 local pGrid = Instance.new("Frame", playerTab)
-pGrid.Size = UDim2.new(0.95, 0, 0, 260)
+pGrid.Size = UDim2.new(0.95, 0, 0, 320)
 pGrid.BackgroundTransparency = 1
 
 local g1 = Instance.new("UIGridLayout", pGrid) 
@@ -368,6 +369,11 @@ Elements.createToggleButton(pGrid, "Auto-Heal", false, function(state) safeCall(
 Elements.createToggleButton(pGrid, "Infinite Zoom", false, function(state)
     shared.infiniteZoomActive = state
     safeCall(PlayerMod, "toggleInfiniteZoom", state)
+end)
+
+-- התיקון המלא: הכפתור נוצר כעת בצורה תקינה בתוך ה-pGrid עם מספיק מקום מסך
+Elements.createToggleButton(pGrid, "Fake Staff LB", false, function(state)
+    safeCall(PlayerMod, "toggleFakeStaff", state)
 end)
 
 -- התיקון כאן: הפנייה ישירה ללוגיקה החדשה בתוך מודול שחקן
