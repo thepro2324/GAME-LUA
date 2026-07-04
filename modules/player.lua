@@ -1,4 +1,4 @@
--- modules/player.lua (גרסה מלאה ומתוקנת מפני שגיאות זום)
+-- modules/player.lua (גרסה מלאה הכוללת פיצ'ר Fake Staff Leaderboard)
 
 local PlayerMod = {}
 
@@ -15,6 +15,7 @@ local bodyGyro = nil
 local noclipConnection = nil
 local infJumpConnection = nil
 local autoResetConnection = nil
+local staffConnection = nil -- חיבור ללופ סריקה ללידרבורד
 
 -- הגדרת ערכי ברירת מחדל גלובליים
 shared.walkSpeedValue = shared.walkSpeedValue or 16
@@ -230,6 +231,50 @@ function PlayerMod.toggleInvisible(state)
             end
         end
     end
+end
+
+-- ==================== מערכת זיהוי וזיוף קבוצת צוות ====================
+function PlayerMod.toggleFakeStaff(state)
+    if staffConnection then staffConnection:Disconnect() staffConnection = nil end
+    
+    if not state then return end
+    
+    -- הרצה בלופ קצר כדי לוודא שזה מתעדכן גם אם שחקנים נכנסים/יוצאים או אם הלידרבורד נטען מחדש
+    staffConnection = RunService.Heartbeat:Connect(function()
+        pcall(function()
+            -- 1. בדיקה ושינוי בתוך ה-Teams המובנים של רובלוקס
+            local teams = game:GetService("Teams")
+            for _, team in ipairs(teams:GetTeams()) do
+                local nameLower = team.Name:lower()
+                if nameLower:find("צוות") or nameLower:find("מנהל") or nameLower:find("staff") or nameLower:find("admin") or nameLower:find("mod") then
+                    if lp.Team ~= team then
+                        lp.Team = team
+                    end
+                    break
+                end
+            end
+            
+            -- 2. בדיקה מקיפה ב-Custom UI של המשחק (למשל לידרבורדים מבוססי פאנלים ב-PlayerGui)
+            local playerGui = lp:FindFirstChild("PlayerGui")
+            if playerGui then
+                for _, gui in ipairs(playerGui:GetDescendants()) do
+                    if gui:IsA("TextLabel") then
+                        local textLower = gui.Text:lower()
+                        if textLower:find("צוות") or textLower:find("מנהל") or textLower:find("staff") or textLower:find("admin") then
+                            -- חיפוש האלמנט של השחקן שלנו בתוך אותה תיקייה או בתיקיית האב שלו
+                            local parentFrame = gui.Parent
+                            if parentFrame then
+                                local playerFrame = parentFrame:FindFirstChild(lp.Name) or (parentFrame.Parent and parentFrame.Parent:FindFirstChild(lp.Name))
+                                if playerFrame and playerFrame:IsA("GuiObject") and playerFrame.Parent ~= parentFrame then
+                                    playerFrame.Parent = parentFrame
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end)
 end
 
 function PlayerMod.toggleNoRagdoll(state) end
