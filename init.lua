@@ -328,25 +328,41 @@ end)
 -- ==================== טאב 3: PLAYER ====================
 local playerTab = MenuInterface.createTab("Player", 3)
 
-Elements.createSlider(playerTab, "Walk Speed", 16, 2000, 16, function(v) 
+-- יצירת תיקיית גלילה פנימית כדי ששום כפתור לא ייחתך בגלל הסליידרים
+local playerScroll = Instance.new("ScrollingFrame")
+playerScroll.Parent = playerTab
+playerScroll.Size = UDim2.new(1, 0, 1, 0)
+playerScroll.BackgroundTransparency = 1
+playerScroll.BorderSizePixel = 0
+playerScroll.ScrollBarThickness = 5
+playerScroll.CanvasSize = UDim2.new(0, 0, 0, 480) -- גובה גלילה מספיק רחב להכל
+
+-- שינוי פריסת הרשימה בתוך התיקייה הנגללת
+local scrollLayout = Instance.new("UIListLayout")
+scrollLayout.Parent = playerScroll
+scrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
+scrollLayout.Padding = UDim.new(0, 10)
+
+-- יצירת האלמנטים ישירות בתוך תיקיית הגלילה (playerScroll)
+Elements.createSlider(playerScroll, "Walk Speed", 16, 2000, 16, function(v) 
     shared.walkSpeedValue = v 
     safeCall(PlayerMod, "updateSpeed", v)
 end)
 
-Elements.createSlider(playerTab, "Jump Power", 50, 1500, 50, function(v) 
+Elements.createSlider(playerScroll, "Jump Power", 50, 1500, 50, function(v) 
     shared.jumpPowerValue = v 
     safeCall(PlayerMod, "updateJump", v)
 end)
 
-Elements.createSlider(playerTab, "Fly Speed", 20, 2000, 100, function(v) 
+Elements.createSlider(playerScroll, "Fly Speed", 20, 2000, 100, function(v) 
     shared.flySpeed = v 
 end)
 
-Elements.createSlider(playerTab, "Hip Height", 0, 50, 2, function(v) safeCall(PlayerMod, "updateHipHeight", v) end)
+Elements.createSlider(playerScroll, "Hip Height", 0, 50, 2, function(v) safeCall(PlayerMod, "updateHipHeight", v) end)
 
--- הגדלנו את הגובה מ-260 ל-320 כדי לתת מקום לשורה החדשה של הכפתור
-local pGrid = Instance.new("Frame", playerTab)
-pGrid.Size = UDim2.new(0.95, 0, 0, 320)
+-- גריד הכפתורים ממוקם כעת בתוך תיקיית הגלילה
+local pGrid = Instance.new("Frame", playerScroll)
+pGrid.Size = UDim2.new(0.95, 0, 0, 200) -- הגובה מותאם דינמית בתוך הגלילה
 pGrid.BackgroundTransparency = 1
 
 local g1 = Instance.new("UIGridLayout", pGrid) 
@@ -371,11 +387,9 @@ Elements.createToggleButton(pGrid, "Infinite Zoom", false, function(state)
     safeCall(PlayerMod, "toggleInfiniteZoom", state)
 end)
 
--- התיקון המלא: הכפתור נוצר כעת בצורה תקינה בתוך ה-pGrid עם מספיק מקום מסך
 Elements.createToggleButton(pGrid, "Fake Staff LB", false, function(state)
     safeCall(PlayerMod, "toggleFakeStaff", state)
 end)
-
 -- התיקון כאן: הפנייה ישירה ללוגיקה החדשה בתוך מודול שחקן
 Elements.createToggleButton(pGrid, "Fake Staff LB", false, function(state)
     safeCall(PlayerMod, "toggleFakeStaff", state)
