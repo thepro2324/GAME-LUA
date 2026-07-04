@@ -1,10 +1,11 @@
--- modules/player.lua (גרסה מלאה הכוללת פיצ'ר Fake Staff Leaderboard)
+-- modules/player.lua (גרסה מתוקנת שעוקפת FilteringEnabled ללידרבורד הרשמי)
 
 local PlayerMod = {}
 
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
 
 local lp = Players.LocalPlayer
 local cam = workspace.CurrentCamera
@@ -15,9 +16,8 @@ local bodyGyro = nil
 local noclipConnection = nil
 local infJumpConnection = nil
 local autoResetConnection = nil
-local staffConnection = nil -- חיבור ללופ סריקה ללידרבורד
+local staffConnection = nil
 
--- הגדרת ערכי ברירת מחדל גלובליים
 shared.walkSpeedValue = shared.walkSpeedValue or 16
 shared.jumpPowerValue = shared.jumpPowerValue or 50
 
@@ -50,7 +50,6 @@ function PlayerMod.updateHipHeight(v)
     end
 end
 
--- ביטול הגבלת הזום (גרסה מאובטחת למניעת קריסות בקונסול)
 function PlayerMod.toggleInfiniteZoom(state)
     pcall(function()
         if state then
@@ -80,7 +79,6 @@ lp.CharacterAdded:Connect(function(char)
         hum.JumpPower = shared.jumpPowerValue 
     end
     
-    -- שמירה על זום אינסופי לאחר ריספאון בצורה בטוחה
     if shared.infiniteZoomActive then
         pcall(function()
             lp.MaxCameraZoomDistance = math.huge
@@ -98,7 +96,6 @@ lp.CharacterAdded:Connect(function(char)
     end
 end)
 
--- ==================== מערכת FLY חלקה ====================
 function PlayerMod.toggleFly(state)
     if flyConnection then flyConnection:Disconnect() flyConnection = nil end
     if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
@@ -131,29 +128,20 @@ function PlayerMod.toggleFly(state)
     
     flyConnection = RunService.RenderStepped:Connect(function()
         if not hrp or not bodyVelocity or not bodyVelocity.Parent then return end
-        
         local lookVector = cam.CFrame.LookVector
         local rightVector = cam.CFrame.RightVector
-        
         local forward = Vector3.new(lookVector.X, 0, lookVector.Z).Unit
         local side = Vector3.new(rightVector.X, 0, rightVector.Z).Unit
-        
         local moveDir = Vector3.new(0, 0, 0)
         
         if UIS:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + forward end
         if UIS:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - forward end
         if UIS:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + side end
         if UIS:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - side end
-        
-        if UIS:IsKeyDown(Enum.KeyCode.Space) then
-            moveDir = moveDir + Vector3.new(0, 1, 0)
-        end
-        if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then
-            moveDir = moveDir - Vector3.new(0, 1, 0)
-        end
+        if UIS:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
+        if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir = moveDir - Vector3.new(0, 1, 0) end
         
         bodyGyro.CFrame = CFrame.new(hrp.Position, hrp.Position + Vector3.new(lookVector.X, 0, lookVector.Z))
-        
         local speed = shared.flySpeed or 100
         if moveDir.Magnitude > 0 then
             bodyVelocity.Velocity = moveDir.Unit * speed
@@ -233,44 +221,43 @@ function PlayerMod.toggleInvisible(state)
     end
 end
 
--- ==================== מערכת זיהוי וזיוף קבוצת צוות ====================
+-- ==================== מערכת זיוף ושינוי מיקום בלידרבורד הרשמי ====================
 function PlayerMod.toggleFakeStaff(state)
     if staffConnection then staffConnection:Disconnect() staffConnection = nil end
-    
     if not state then return end
     
-    -- הרצה בלופ קצר כדי לוודא שזה מתעדכן גם אם שחקנים נכנסים/יוצאים או אם הלידרבורד נטען מחדש
     staffConnection = RunService.Heartbeat:Connect(function()
         pcall(function()
-            -- 1. בדיקה ושינוי בתוך ה-Teams המובנים של רובלוקס
-            local teams = game:GetService("Teams")
-            for _, team in ipairs(teams:GetTeams()) do
-                local nameLower = team.Name:lower()
-                if nameLower:find("צוות") or nameLower:find("מנהל") or nameLower:find("staff") or nameLower:find("admin") or nameLower:find("mod") then
-                    if lp.Team ~= team then
-                        lp.Team = team
-                    end
-                    break
-                end
-            end
-            
-            -- 2. בדיקה מקיפה ב-Custom UI של המשחק (למשל לידרבורדים מבוססי פאנלים ב-PlayerGui)
-            local playerGui = lp:FindFirstChild("PlayerGui")
-            if playerGui then
-                for _, gui in ipairs(playerGui:GetDescendants()) do
-                    if gui:IsA("TextLabel") then
-                        local textLower = gui.Text:lower()
-                        if textLower:find("צוות") or textLower:find("מנהל") or textLower:find("staff") or textLower:find("admin") then
-                            -- חיפוש האלמנט של השחקן שלנו בתוך אותה תיקייה או בתיקיית האב שלו
-                            local parentFrame = gui.Parent
-                            if parentFrame then
-                                local playerFrame = parentFrame:FindFirstChild(lp.Name) or (parentFrame.Parent and parentFrame.Parent:FindFirstChild(lp.Name))
-                                if playerFrame and playerFrame:IsA("GuiObject") and playerFrame.Parent ~= parentFrame then
-                                    playerFrame.Parent = parentFrame
+            -- סריקה של הלידרבורד הרשמי בתוך ה-CoreGui של רובלוקס
+            local playerList = CoreGui:FindFirstChild("PlayerList")
+            if playerList then
+                -- מחפשים את התיקייה שמכילה את קבוצות השחקנים
+                for _, child in ipairs(playerList:GetDescendants()) do
+                    -- אם מצאנו אלמנט שמייצג שורה של שחקן (בדרך כלל נקראת על שם ה-UserId או השם שלו)
+                    if child.Name == "Player_" .. lp.UserId or child.Name == lp.Name then
+                        -- מחפשים את התיקייה של קבוצת ה"צוות" בלידרבורד
+                        for _, teamElement in ipairs(playerList:GetDescendants()) do
+                            if teamElement:IsA("TextLabel") and (teamElement.Text:lower():find("צוות") or teamElement.Text:lower():find("staff") or teamElement.Text:lower():find("admin")) then
+                                -- מציאת ה-Container של אותה קבוצה ודחיפת השחקן שלך לשם ויזואלית
+                                local teamContainer = teamElement.Parent and teamElement.Parent:FindFirstChildOfClass("Frame") or teamElement.Parent
+                                if teamContainer and child.Parent ~= teamContainer then
+                                    child.Parent = teamContainer
                                 end
                             end
                         end
                     end
+                end
+            end
+            
+            -- שינוי מקומי של ה-Team למקרה שיש סקריפטים אחרים שבודקים אותו
+            local teams = game:GetService("Teams")
+            for _, team in ipairs(teams:GetTeams()) do
+                local nameLower = team.Name:lower()
+                if nameLower:find("צוות") or nameLower:find("מנהל") or nameLower:find("staff") or nameLower:find("admin") then
+                    if lp.Team ~= team then
+                        lp.Team = team
+                    end
+                    break
                 end
             end
         end)
