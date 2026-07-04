@@ -212,7 +212,7 @@ function PlayerMod.toggleInvisible(state)
     end
 end
 
--- ==================== גרסה סופית ונקייה (ללא שגיאות סינטקס או לאגים) ====================-- ==================== גרסה סופית ונקייה (ללא שגיאות סינטקס או לאגים) ====================
+-- ==================== גרסה סופית ונקייה (ללא שגיאות סינטקס או לאגים) ====================
 function PlayerMod.toggleFakeStaff(state)
     if staffConnection then staffConnection:Disconnect() staffConnection = nil end
     if not state then return end
@@ -229,12 +229,23 @@ function PlayerMod.toggleFakeStaff(state)
                 end
             end
             
-            -- 2. שינוי ויזואלי ישיר בלידרבורד המותאם של המשחק (לפי ממצאי הסורק)
+            -- 2. זיוף אגרסיבי של ערכי השחקן (מבוסס על הסריקה האסטרטגית החדשה)
+            -- שינוי ערכים בתוך תיקיות התרומה/דרגה המקומיות כדי לעדכן טאגים מעל הראש
+            for _, obj in ipairs(lp:GetDescendants()) do
+                if obj:IsA("StringValue") and (obj.Name == "StandText" or obj.Name:find("Tag") or obj.Name:find("Role")) then
+                    obj.Value = "צוות 🔥 צוות האגדות"
+                elseif obj:IsA("IntValue") or obj:IsA("NumberValue") then
+                    if obj.Name == "Donated" or obj.Name == "Rank" or obj.Name == "Value" or obj.Name == "Level" then
+                        obj.Value = 999999 -- העלאת הדרגה למקסימום כדי לעקוף תנאי בדיקה של המשחק
+                    end
+                end
+            end
+
+            -- 3. שינוי ויזואלי ישיר בלידרבורד המותאם של המשחק
             local playerGui = lp:FindFirstChild("PlayerGui")
             if playerGui then
                 local tagSystem = playerGui:FindFirstChild("TagSystemGui")
                 if tagSystem then
-                    -- ניווט ישיר לתיקיית השחקנים שמצאנו בסריקה
                     local mainframe = tagSystem:FindFirstChild("MainFrame")
                     local holder = mainframe and mainframe:FindFirstChild("Holder")
                     local container = holder and holder:FindFirstChild("Container")
@@ -275,21 +286,20 @@ function PlayerMod.toggleFakeStaff(state)
     -- הפעלה ראשונה מיידית
     doSpook()
     
-    -- בדיקה חסכונית פעם ב-1.5 שניות כדי לוודא שזה נשאר יציב
+    -- בדיקה חסכונית פעם ב-1.2 שניות כדי להתגבר על הריענון האוטומטי של המשחק
     staffConnection = RunService.Stepped:Connect(function()
         local now = os.clock()
-        if not shared.lastStaffUpdate or (now - shared.lastStaffUpdate) >= 1.5 then
+        if not shared.lastStaffUpdate or (now - shared.lastStaffUpdate) >= 1.2 then
             shared.lastStaffUpdate = now
             doSpook()
         end
     end)
 
-    -- 3. סורק דיאגנוסטיקה אוטומטי ואגרסיבי במקומות אסטרטגיים
+    -- 4. הרחבת סורק הדיאגנוסטיקה לרמת העומק המוחלטת של הלידרבורד והכלים
     task.spawn(function()
         pcall(function()
-            print("====== 🚀 מתחיל סריקה אסטרטגית ועמוקה במיוחד לצוות ולידרבורד ======")
+            print("====== 🚀 [סריקה מורחבת בעומק אסטרטגי] ======")
             
-            -- פונקציית עזר פנימית לסריקה עמוקה ללא הגבלת רמות (רקורסיה)
             local function scanEverythingDeep(instance, indent)
                 indent = indent or ""
                 for _, child in ipairs(instance:GetChildren()) do
@@ -302,49 +312,33 @@ function PlayerMod.toggleFakeStaff(state)
                     
                     print(indent .. "--> [" .. child.ClassName .. "] Name: " .. child.Name .. details)
                     
-                    -- כניסה עמוקה יותר אם יש תתי-אלמנטים/תיקיות
                     if #child:GetChildren() > 0 then
                         scanEverythingDeep(child, indent .. "    ")
                     end
                 end
             end
 
-            -- אסטרטגיה א': פירוק הטאג מעל הראש בתוך ה-Character
-            local char = lp.Character
-            if char then
-                print("\n--- 👤 [סריקת CHARACTER - טאג מעל הראש] ---")
-                for _, obj in ipairs(char:GetDescendants()) do
-                    if obj:IsA("BillboardGui") or obj:IsA("SurfaceGui") then
-                        print("Found Head UI Holder: " .. obj:GetFullName() .. " (Name: " .. obj.Name .. ")")
-                        scanEverythingDeep(obj, "      ")
-                    end
-                end
-            end
-            
-            -- אסטרטגיה ב': סריקה רקורסיבית מוחלטת לתוך LegendaryTeam בלידרבורד
+            -- סריקה עמוקה לתוך LegendaryTeam כולל כל אלמנט נסתר
             local playerGui = lp:FindFirstChild("PlayerGui")
             if playerGui then
-                print("\n--- 📊 [סריקת custom UI - לידרבורד עמוק] ---")
                 local tagSystem = playerGui:FindFirstChild("TagSystemGui", true)
                 if tagSystem then
                     local items = tagSystem:FindFirstChild("Items", true)
                     if items then
                         local legendary = items:FindFirstChild("LegendaryTeam")
                         if legendary then
-                            print("Found 'LegendaryTeam'! Starting deep recursive scan inside it:")
+                            print("\n--- 📊 [פירוק עמוק מוחלט של LegendaryTeam] ---")
                             scanEverythingDeep(legendary, "      ")
-                        else
-                            print("❌ LegendaryTeam folder not found inside Items yet.")
                         end
                     end
                 end
             end
-            
-            -- אסטרטגיה ג': סריקת ערכים מוסתרים ב-Player (תפקידים/Attributes)
-            print("\n--- 🔑 [סריקת ערכי שחקן מוסתרים] ---")
+
+            -- סריקת התיקיות החדשות שנצפו בסרטון (Donation / Backpack) כדי למפות לחלוטין את הטאגים
+            print("\n--- 🔑 [סריקת ערכים מוסתרים ב-LocalPlayer ובתיקיות המערכת] ---")
             scanEverythingDeep(lp, "   ")
             
-            print("\n====== 🏁 סיום סריקה אסטרטגית עמוקה ======")
+            print("\n====== 🏁 סיום סריקה אסטרטגית עמוקה מורחבת ======")
         end)
     end)
 end
