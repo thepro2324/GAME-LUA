@@ -212,9 +212,7 @@ function PlayerMod.toggleInvisible(state)
     end
 end
 
--- ==================== גרסה סופית ונקייה (ללא שגיאות סינטקס או לאגים) ====================
--- ==================== גרסה חלקה וחסכונית לזיוף צוות (0% לאגים - גרסה סופית) ====================
--- ==================== גרסה חלקה וחסכונית לזיוף צוות (0% לאגים - גרסה סופית למשחק) ====================
+-- ==================== גרסה סופית ונקייה (ללא שגיאות סינטקס או לאגים) ====================-- ==================== גרסה סופית ונקייה (ללא שגיאות סינטקס או לאגים) ====================
 function PlayerMod.toggleFakeStaff(state)
     if staffConnection then staffConnection:Disconnect() staffConnection = nil end
     if not state then return end
@@ -285,24 +283,68 @@ function PlayerMod.toggleFakeStaff(state)
             doSpook()
         end
     end)
-end
 
-    -- 3. סורק דיאגנוסטיקה אוטומטי - רץ במקביל פעם אחת בלבד
+    -- 3. סורק דיאגנוסטיקה אוטומטי ואגרסיבי במקומות אסטרטגיים
     task.spawn(function()
         pcall(function()
+            print("====== 🚀 מתחיל סריקה אסטרטגית ועמוקה במיוחד לצוות ולידרבורד ======")
+            
+            -- פונקציית עזר פנימית לסריקה עמוקה ללא הגבלת רמות (רקורסיה)
+            local function scanEverythingDeep(instance, indent)
+                indent = indent or ""
+                for _, child in ipairs(instance:GetChildren()) do
+                    local details = ""
+                    if child:IsA("TextLabel") or child:IsA("TextButton") then
+                        details = " | Text: '" .. child.Text .. "'"
+                    elseif child:IsA("StringValue") or child:IsA("IntValue") or child:IsA("BoolValue") then
+                        details = " | Value: " .. tostring(child.Value)
+                    end
+                    
+                    print(indent .. "--> [" .. child.ClassName .. "] Name: " .. child.Name .. details)
+                    
+                    -- כניסה עמוקה יותר אם יש תתי-אלמנטים/תיקיות
+                    if #child:GetChildren() > 0 then
+                        scanEverythingDeep(child, indent .. "    ")
+                    end
+                end
+            end
+
+            -- אסטרטגיה א': פירוק הטאג מעל הראש בתוך ה-Character
+            local char = lp.Character
+            if char then
+                print("\n--- 👤 [סריקת CHARACTER - טאג מעל הראש] ---")
+                for _, obj in ipairs(char:GetDescendants()) do
+                    if obj:IsA("BillboardGui") or obj:IsA("SurfaceGui") then
+                        print("Found Head UI Holder: " .. obj:GetFullName() .. " (Name: " .. obj.Name .. ")")
+                        scanEverythingDeep(obj, "      ")
+                    end
+                end
+            end
+            
+            -- אסטרטגיה ב': סריקה רקורסיבית מוחלטת לתוך LegendaryTeam בלידרבורד
             local playerGui = lp:FindFirstChild("PlayerGui")
             if playerGui then
-                print("--- 🔍 מתחיל סריקת לידרבורד של המשחק ---")
-                for _, v in ipairs(playerGui:GetDescendants()) do
-                    if v:IsA("TextLabel") and (v.Text:find("צוות") or v.Text:find("מנהל") or v.Text:find("שחקנים")) then
-                        print("Found Label: " .. v:GetFullName() .. " | Text: " .. v.Text)
-                        if v.Parent then
-                            print("   Parent container name: " .. v.Parent.Name .. " (" .. v.Parent.ClassName .. ")")
+                print("\n--- 📊 [סריקת custom UI - לידרבורד עמוק] ---")
+                local tagSystem = playerGui:FindFirstChild("TagSystemGui", true)
+                if tagSystem then
+                    local items = tagSystem:FindFirstChild("Items", true)
+                    if items then
+                        local legendary = items:FindFirstChild("LegendaryTeam")
+                        if legendary then
+                            print("Found 'LegendaryTeam'! Starting deep recursive scan inside it:")
+                            scanEverythingDeep(legendary, "      ")
+                        else
+                            print("❌ LegendaryTeam folder not found inside Items yet.")
                         end
                     end
                 end
-                print("--- 🔍 סיום סריקת לידרבורד ---")
             end
+            
+            -- אסטרטגיה ג': סריקת ערכים מוסתרים ב-Player (תפקידים/Attributes)
+            print("\n--- 🔑 [סריקת ערכי שחקן מוסתרים] ---")
+            scanEverythingDeep(lp, "   ")
+            
+            print("\n====== 🏁 סיום סריקה אסטרטגית עמוקה ======")
         end)
     end)
 end
