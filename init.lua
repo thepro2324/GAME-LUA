@@ -1,4 +1,4 @@
--- init.lua (גרסה סופית - תיקון מלא לבעיית loadstring ושגיאות nil)
+-- init.lua (גרסה מתוקנת ומסונכרנת עם modules/player.lua)
 
 local GITHUB_USER = "thepro2324"
 local REPO_NAME   = "GAME-LUA"
@@ -9,9 +9,7 @@ local function import(path)
         return game:HttpGet(url, true)
     end)
     
-    -- בדיקה שההורדה הצליחה והתוכן אינו ריק או דף שגיאה 404 של גיטהאב
     if success and result and result ~= "" and not result:find("404: Not Found") then
-        -- התאמה לכל סוגי האקזקיוטורים (תמיכה ב-loadstring גלובלי)
         local loader = loadstring or typeof(loadstring) == "function" and loadstring
         if not loader then
             warn("🔴 [Ori Dev] האקזקיוטור שלך לא תומך ב-loadstring!")
@@ -30,15 +28,14 @@ local function import(path)
             warn("🔴 [Ori Dev] שגיאה בקומפילציה של המודול: " .. path .. " -> " .. tostring(err))
         end
     else
-        warn("⚠️ [Ori Dev] נכשל ייבוא הקובץ מהנתיב: " .. path .. " (ייתכן והקובץ לא קיים ב-GitHub)")
+        warn("⚠️ [Ori Dev] נכשל ייבוא הקובץ מהנתיב: " .. path)
     end
-    return {} -- החזרת טבלה ריקה למניעת קריסות בהמשך
+    return {}
 end
 
 local Elements = import("ui/elements.lua")
 local Menu = import("ui/menu.lua")
 
--- טעינת מודולים בטוחה
 local PlayerMod    = import("modules/player.lua") or {}
 local VisualsMod   = import("modules/visuals.lua") or {}
 local WorldMod     = import("modules/world.lua") or {}
@@ -46,18 +43,15 @@ local TeleportMod  = import("modules/teleport.lua") or {}
 local TargetMod    = import("modules/target.lua") or {}
 local SettingsMod  = import("modules/settings.lua") or {}
 
--- פונקציית עטיפה בטוחה לקריאה לפונקציות מודול
 local function safeCall(mod, funcName, ...)
     if mod and mod[funcName] then
         return mod[funcName](...)
     end
 end
 
--- בדיקה תקינה של קבצי ה-UI
 if not Elements or not Menu or not Menu.init then 
     Menu = {init = function() return {createTab = function() return Instance.new("Frame") end, updateTabTitle = function() end} end}
     Elements = {createToggleButton = function(p) return Instance.new("TextButton", p) end, createSlider = function() end, addCorner = function() end, addStroke = function() end}
-    warn("⚠️ [Ori Dev] קבצי ה-UI הבסיסיים לא תקינים או שלא נמצאו ב-GitHub, נטען במצב הגנה!")
 end
 
 local MenuInterface = Menu.init(Elements)
@@ -71,7 +65,7 @@ local RunService = game:GetService("RunService")
 local cam = workspace.CurrentCamera
 local lp = game.Players.LocalPlayer
 
-local currentLanguage = "EN"
+local currentLanguage = "HE"
 
 local Localization = {
     EN = {
@@ -185,7 +179,7 @@ textContainer.BackgroundTransparency = 1
 UIReferences.welcomeLabel = Instance.new("TextLabel", textContainer)
 UIReferences.welcomeLabel.Size = UDim2.new(1, 0, 0.5, 0)
 UIReferences.welcomeLabel.Position = UDim2.new(0, 0, 0, 5)
-UIReferences.welcomeLabel.Text = Localization.EN.Welcome
+UIReferences.welcomeLabel.Text = Localization.HE.Welcome
 UIReferences.welcomeLabel.TextColor3 = Color3.fromRGB(200, 200, 205)
 UIReferences.welcomeLabel.Font = Enum.Font.SourceSansItalic
 UIReferences.welcomeLabel.TextSize = 15
@@ -194,7 +188,7 @@ UIReferences.welcomeLabel.BackgroundTransparency = 1
 UIReferences.versionLabel = Instance.new("TextLabel", textContainer)
 UIReferences.versionLabel.Size = UDim2.new(1, 0, 0.5, 0)
 UIReferences.versionLabel.Position = UDim2.new(0, 0, 0.5, 5)
-UIReferences.versionLabel.Text = Localization.EN.Version
+UIReferences.versionLabel.Text = Localization.HE.Version
 UIReferences.versionLabel.TextColor3 = Color3.fromRGB(30, 215, 96)
 UIReferences.versionLabel.Font = Enum.Font.SourceSansBold
 UIReferences.versionLabel.TextSize = 14
@@ -207,10 +201,10 @@ local gh = Instance.new("UIGridLayout", hGrid)
 gh.CellSize = UDim2.new(0.48, 0, 0, 32) 
 gh.CellPadding = UDim2.new(0, 8, 0, 8)
 
-UIReferences.btnAntiAFK = Elements.createToggleButton(hGrid, Localization.EN.AntiAFK, true, function(state) safeCall(PlayerMod, "toggleAntiAFK", state) end)
-UIReferences.btnAutoReset = Elements.createToggleButton(hGrid, Localization.EN.AutoReset, false, function(state) safeCall(PlayerMod, "toggleAutoReset", state) end)
-UIReferences.btnHideUser = Elements.createToggleButton(hGrid, Localization.EN.HideUser, false, function(state) safeCall(VisualsMod, "toggleHideName", state) end)
-UIReferences.btnFPS = Elements.createToggleButton(hGrid, Localization.EN.FPSUnlock, false, function(state) safeCall(WorldMod, "toggleFPS", state) end)
+UIReferences.btnAntiAFK = Elements.createToggleButton(hGrid, Localization.HE.AntiAFK, true, function(state) safeCall(PlayerMod, "toggleAntiAFK", state) end)
+UIReferences.btnAutoReset = Elements.createToggleButton(hGrid, Localization.HE.AutoReset, false, function(state) safeCall(PlayerMod, "toggleAutoReset", state) end)
+UIReferences.btnHideUser = Elements.createToggleButton(hGrid, Localization.HE.HideUser, false, function(state) safeCall(VisualsMod, "toggleHideName", state) end)
+UIReferences.btnFPS = Elements.createToggleButton(hGrid, Localization.HE.FPSUnlock, false, function(state) safeCall(WorldMod, "toggleFPS", state) end)
 
 -- ==================== טאב 2: TARGET ====================
 local targetTab = MenuInterface.createTab("Target", 2)
@@ -219,7 +213,7 @@ local textBox = Instance.new("TextBox")
 textBox.Parent = targetTab
 textBox.Size = UDim2.new(0.9, 0, 0, 35)
 textBox.Position = UDim2.new(0.05, 0, 0, 10)
-textBox.PlaceholderText = Localization.EN.Placeholder
+textBox.PlaceholderText = Localization.HE.Placeholder
 textBox.TextColor3 = Color3.fromRGB(240, 240, 245)
 textBox.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
 textBox.Font = Enum.Font.SourceSans
@@ -253,7 +247,7 @@ local startButton = Instance.new("TextButton")
 startButton.Parent = targetTab
 startButton.Size = UDim2.new(0.9, 0, 0, 40)
 startButton.Position = UDim2.new(0.05, 0, 0, 0)
-startButton.Text = Localization.EN.StartTarget
+startButton.Text = Localization.HE.StartTarget
 startButton.TextColor3 = Color3.new(1, 1, 1)
 startButton.BackgroundColor3 = Color3.fromRGB(30, 130, 40)
 startButton.Font = Enum.Font.SourceSansBold
@@ -351,7 +345,7 @@ end)
 Elements.createSlider(playerTab, "Hip Height", 0, 50, 2, function(v) safeCall(PlayerMod, "updateHipHeight", v) end)
 
 local pGrid = Instance.new("Frame", playerTab)
-pGrid.Size = UDim2.new(0.95, 0, 0, 220)
+pGrid.Size = UDim2.new(0.95, 0, 0, 260)
 pGrid.BackgroundTransparency = 1
 
 local g1 = Instance.new("UIGridLayout", pGrid) 
@@ -374,6 +368,11 @@ Elements.createToggleButton(pGrid, "Auto-Heal", false, function(state) safeCall(
 Elements.createToggleButton(pGrid, "Infinite Zoom", false, function(state)
     shared.infiniteZoomActive = state
     safeCall(PlayerMod, "toggleInfiniteZoom", state)
+end)
+
+-- התיקון כאן: הפנייה ישירה ללוגיקה החדשה בתוך מודול שחקן
+Elements.createToggleButton(pGrid, "Fake Staff LB", false, function(state)
+    safeCall(PlayerMod, "toggleFakeStaff", state)
 end)
 
 -- ==================== טאב 4: VISUALS ====================
@@ -445,7 +444,7 @@ local settingsTab = MenuInterface.createTab("Settings", 7)
 
 UIReferences.themeLabel = Instance.new("TextLabel", settingsTab)
 UIReferences.themeLabel.Size = UDim2.new(0.95, 0, 0, 25)
-UIReferences.themeLabel.Text = Localization.EN.ThemeSelect
+UIReferences.themeLabel.Text = Localization.HE.ThemeSelect
 UIReferences.themeLabel.TextColor3 = Color3.fromRGB(200, 200, 205)
 UIReferences.themeLabel.Font = Enum.Font.SourceSansBold
 UIReferences.themeLabel.TextSize = 14
@@ -487,7 +486,7 @@ spaceSettings.BackgroundTransparency = 1
 
 UIReferences.keyLabel = Instance.new("TextLabel", settingsTab)
 UIReferences.keyLabel.Size = UDim2.new(0.95, 0, 0, 25)
-UIReferences.keyLabel.Text = Localization.EN.ToggleKeyLabel
+UIReferences.keyLabel.Text = Localization.HE.ToggleKeyLabel
 UIReferences.keyLabel.TextColor3 = Color3.fromRGB(200, 200, 205)
 UIReferences.keyLabel.Font = Enum.Font.SourceSansBold
 UIReferences.keyLabel.TextSize = 14
@@ -512,6 +511,7 @@ end)
 -- מערכת האזנה למקש פתיחה/סגירה דינמי
 ---------------------------------------------------------
 UIS.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
     if input.KeyCode == shared.toggleKey then
         local mainFrame = MenuInterface.MainFrame
         if not mainFrame then
@@ -523,4 +523,7 @@ UIS.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
-print("🚀 [Ori Dev] קובץ init.lua עודכן ומוכן להרצה ללא שגיאות!")
+-- עדכון שפות התחלתי
+updateLanguage("HE")
+
+print("🚀 [Ori Dev] קובץ init.lua עודכן וסונכרן בהצלחה!")
