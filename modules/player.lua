@@ -11,12 +11,13 @@ local flyConnection = nil
 local bodyVelocity = nil
 local bodyGyro = nil
 local noclipConnection = nil
-local infJumpConnection = nil -- זה המשתנה שהיה חסר לו שימוש
+local infJumpConnection = nil
+local autoResetConnection = nil
+local staffConnection = nil
 
 shared.walkSpeedValue = shared.walkSpeedValue or 16
 shared.jumpPowerValue = shared.jumpPowerValue or 50
 
--- פונקציות בסיסיות
 function PlayerMod.updateSpeed(v)
     shared.walkSpeedValue = v
     local char = lp.Character
@@ -38,81 +39,53 @@ function PlayerMod.updateJump(v)
     end
 end
 
--- גרסה משופרת ומדויקת יותר
-function PlayerMod.toggleInfiniteJump(state)
-    if infJumpConnection then 
-        infJumpConnection:Disconnect() 
-        infJumpConnection = nil 
-    end
-    
-    if state then
-        infJumpConnection = UIS.JumpRequest:Connect(function()
-            local char = lp.Character
-            if char then
-                local hrp = char:FindFirstChild("HumanoidRootPart")
-                if hrp then
-                    -- זו הדרך הפיזיקלית: אנחנו נותנים "דחיפה" קטנה למעלה
-                    -- AssemblyLinearVelocity עוקף את ה-Humanoid
-                    local currentVelocity = hrp.AssemblyLinearVelocity
-                    hrp.AssemblyLinearVelocity = Vector3.new(currentVelocity.X, 50, currentVelocity.Z)
-                    
-                    print("Jump executed via Physics!") -- בדיקה: אם זה מופיע ב-F9 ולא קופץ, יש בעיה אחרת
-                end
-            end
-        end)
+function PlayerMod.updateHipHeight(v)
+    local char = lp.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.HipHeight = v end
     end
 end
 
--- פונקציית הנשק
-function PlayerMod.toggleCustomWeapon(state)
-    local toolName = "CustomWeapon"
-    local backpack = lp.Backpack
-    local character = lp.Character
-
-    local existing = backpack:FindFirstChild(toolName) or (character and character:FindFirstChild(toolName))
-    if existing then existing:Destroy() end
-    
-    if not state then return end
-
-    local tool = Instance.new("Tool")
-    tool.Name = toolName
-    tool.Parent = backpack
-
-    local handle = Instance.new("Part")
-    handle.Name = "Handle"
-    handle.Size = Vector3.new(1, 4, 1)
-    handle.BrickColor = BrickColor.new("Really red")
-    handle.Parent = tool
-
-    for i = 1, 4 do
-        local part = Instance.new("Part")
-        part.Size = Vector3.new(0.5, 0.5, 0.5)
-        part.BrickColor = BrickColor.new("Black")
-        part.Position = handle.Position + Vector3.new(0, i * 0.8, 0)
-        part.Parent = tool
-        
-        local weld = Instance.new("WeldConstraint")
-        weld.Part0 = handle
-        weld.Part1 = part
-        weld.Parent = handle
-    end
-end
-
--- פונקציות נוספות
 function PlayerMod.toggleInfiniteZoom(state)
     pcall(function()
         local camera = workspace.CurrentCamera or workspace:FindFirstChildOfClass("Camera")
         if state then
             lp.CameraMaxZoomDistance = math.huge
             lp.CameraMinZoomDistance = 0
-            if camera then camera.MaxCameraZoomDistance = math.huge camera.MinCameraZoomDistance = 0 end
+            if camera then
+                camera.MaxCameraZoomDistance = math.huge
+                camera.MinCameraZoomDistance = 0
+            end
         else
             lp.CameraMaxZoomDistance = 128
             lp.CameraMinZoomDistance = 0.5
-            if camera then camera.MaxCameraZoomDistance = 128 camera.MinCameraZoomDistance = 0.5 end
+            if camera then
+                camera.MaxCameraZoomDistance = 128
+                camera.MinCameraZoomDistance = 0.5
+            end
         end
     end)
 end
+
+lp.CharacterAdded:Connect(function(char)
+    local hum = char:WaitForChild("Humanoid")
+    task.wait(0.1)
+    if shared.walkSpeedValue then hum.WalkSpeed = shared.walkSpeedValue end
+    if shared.jumpPowerValue then 
+        hum.UseJumpPower = true
+        hum.JumpPower = shared.jumpPowerValue 
+    end
+    
+    if shared.infiniteZoomActive then
+        PlayerMod.toggleInfiniteZoom(true)
+    end
+    
+    if shared.isFlying then
+        task.wait(0.5)
+        PlayerMod.toggleFly(true)
+    end
+end)
 
 function PlayerMod.toggleFly(state)
     if flyConnection then flyConnection:Disconnect() flyConnection = nil end
@@ -131,6 +104,7 @@ function PlayerMod.toggleFly(state)
     local char = lp.Character or lp.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart")
     local hum = char:WaitForChild("Humanoid")
+    
     hum.PlatformStand = true
     
     bodyVelocity = Instance.new("BodyVelocity")
@@ -146,18 +120,39 @@ function PlayerMod.toggleFly(state)
     flyConnection = RunService.RenderStepped:Connect(function()
         if not hrp or not bodyVelocity or not bodyVelocity.Parent then return end
         local lookVector = cam.CFrame.LookVector
+        local rightVector = cam.CFrame.RightVector
         local forward = Vector3.new(lookVector.X, 0, lookVector.Z).Unit
-        local side = Vector3.new(cam.CFrame.RightVector.X, 0, cam.CFrame.RightVector.Z).Unit
+        local side = Vector3.new(rightVector.X, 0, rightVector.Z).Unit
         local moveDir = Vector3.new(0, 0, 0)
         
         if UIS:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + forward end
         if UIS:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - forward end
         if UIS:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + side end
         if UIS:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - side end
+        if UIS:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
+        if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir = moveDir - Vector3.new(0, 1, 0) end
         
         bodyGyro.CFrame = CFrame.new(hrp.Position, hrp.Position + Vector3.new(lookVector.X, 0, lookVector.Z))
-        bodyVelocity.Velocity = moveDir.Magnitude > 0 and (moveDir.Unit * (shared.flySpeed or 100)) or Vector3.new(0, 0, 0)
+        local speed = shared.flySpeed or 100
+        if moveDir.Magnitude > 0 then
+            bodyVelocity.Velocity = moveDir.Unit * speed
+        else
+            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        end
     end)
+end
+
+function PlayerMod.toggleInfJump(state)
+    if infJumpConnection then infJumpConnection:Disconnect() infJumpConnection = nil end
+    if state then
+        infJumpConnection = UIS.JumpRequest:Connect(function()
+            local char = lp.Character
+            if char then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+            end
+        end)
+    end
 end
 
 function PlayerMod.toggleNoclip(state)
@@ -170,6 +165,27 @@ function PlayerMod.toggleNoclip(state)
                     if part:IsA("BasePart") then part.CanCollide = false end
                 end
             end
+        end)
+    end
+end
+
+function PlayerMod.toggleAutoReset(state)
+    if autoResetConnection then autoResetConnection:Disconnect() autoResetConnection = nil end
+    if state then
+        local char = lp.Character or lp.CharacterAdded:Wait()
+        local hum = char:WaitForChild("Humanoid")
+        autoResetConnection = hum.HealthChanged:Connect(function(health)
+            if health > 0 and health <= 15 then hum.Health = 0 end
+        end)
+    end
+end
+
+function PlayerMod.toggleAntiAFK(state)
+    if state then
+        local virtualUser = game:GetService("VirtualUser")
+        lp.Idled:Connect(function()
+            virtualUser:CaptureController()
+            virtualUser:ClickButton2(Vector2.new(0,0))
         end)
     end
 end
@@ -195,5 +211,88 @@ function PlayerMod.toggleInvisible(state)
         end
     end
 end
+
+-- ==================== פונקציית FakeStaff המעודכנת והממוקדת ====================
+function PlayerMod.toggleFakeStaff(state)
+    print("[DEBUG] toggleFakeStaff נקראה עם מצב: ", tostring(state))
+
+    if staffConnection then 
+        staffConnection:Disconnect() 
+        staffConnection = nil 
+    end
+    
+    if not state then return end
+    
+    local function doSpook()
+        pcall(function()
+            -- 1. שינוי דרך מערכת ה-Teams הרגילה (לגיבוי)
+            local teams = game:GetService("Teams")
+            for _, team in ipairs(teams:GetTeams()) do
+                local nameLower = team.Name:lower()
+                if nameLower:find("צוות") or nameLower:find("מנהל") or nameLower:find("staff") or nameLower:find("admin") or nameLower:find("owner") then
+                    if lp.Team ~= team then lp.Team = team end
+                    if lp.TeamColor ~= team.TeamColor then lp.TeamColor = team.TeamColor end
+                    break
+                end
+            end
+            
+            -- 2. תקיפה ממוקדת ובטוחה של מערכת ה-TagSystemGui
+            local playerGui = lp:FindFirstChild("PlayerGui")
+            if playerGui then
+                local tagGui = playerGui:FindFirstChild("TagSystemGui")
+                if tagGui then
+                    for _, desc in ipairs(tagGui:GetDescendants()) do
+                        if desc:IsA("TextLabel") and (desc.Text == lp.Name or desc.Text == lp.DisplayName or desc.Text:find(lp.Name)) then
+                            local parentFrame = desc.Parent
+                            if parentFrame then
+                                for _, child in ipairs(parentFrame:GetChildren()) do
+                                    if child:IsA("TextLabel") and child ~= desc then
+                                        child.Text = "צוות"
+                                        child.TextColor3 = Color3.fromRGB(255, 0, 0)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+                
+                -- 3. סריקה ושינוי ממוקד של הלידרבורד הויזואלי הראשי
+                local coreLeaderboard = playerGui:FindFirstChild("Leaderboard") or playerGui:FindFirstChild("PlayerList") or playerGui:FindFirstChild("Menus")
+                if coreLeaderboard then
+                    for _, desc in ipairs(coreLeaderboard:GetDescendants()) do
+                        if desc:IsA("TextLabel") and (desc.Text == lp.Name or desc.Text == lp.DisplayName) then
+                            local parentFrame = desc.Parent
+                            if parentFrame then
+                                local roleLabel = parentFrame:FindFirstChild("Role") or parentFrame:FindFirstChild("Rank") or parentFrame:FindFirstChild("Tag") or parentFrame:FindFirstChild("Status")
+                                
+                                if roleLabel and roleLabel:IsA("TextLabel") then
+                                    roleLabel.Text = "צוות"
+                                    roleLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+                                else
+                                    for _, child in ipairs(parentFrame:GetChildren()) do
+                                        if child:IsA("TextLabel") and child ~= desc and not child.Text:find(lp.Name) then
+                                            child.Text = "צוות"
+                                            child.TextColor3 = Color3.fromRGB(255, 0, 0)
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+
+    doSpook()
+    print("[DEBUG] לולאת הנעילה הממוקדת עובדת")
+    
+    staffConnection = RunService.Stepped:Connect(function()
+        doSpook()
+    end)
+end
+
+function PlayerMod.toggleNoRagdoll(state) end
+function PlayerMod.toggleAutoHeal(state) end
 
 return PlayerMod
