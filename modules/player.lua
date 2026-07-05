@@ -18,52 +18,50 @@ function PlayerMod.toggleFakeStaff(state)
     
     local function doSpook()
         pcall(function()
-            -- 1. משתנה הסריקה שלנו
-            local searchResult = {} 
-
-            -- 2. סריקה ב-PlayerGui
-            local playerGui = lp:FindFirstChild("PlayerGui")
-            if playerGui then
-                local function scan(parent)
-                    for _, obj in ipairs(parent:GetChildren()) do
-                        -- אנחנו בודקים אובייקטים שנראים כמו טקסט
-                        if obj:IsA("TextLabel") or obj:IsA("ImageLabel") then
-                            local content = obj:IsA("TextLabel") and obj.Text or "IMAGE"
-                            
-                            -- אם זה נראה רלוונטי (מכיל את השם שלך או מילות מפתח), נוסיף ל-searchResult
-                            if content:find(lp.Name) or obj.Name:lower():find("name") or obj.Name:lower():find("rank") then
-                                table.insert(searchResult, {
-                                    Path = obj:GetFullName(),
-                                    Type = obj.ClassName,
-                                    Content = content,
-                                    Parent = obj.Parent.Name
-                                })
-                            end
-                        end
-                        scan(obj)
+            -- 1. הגדרת המשתנה לסריקה
+            local searchResults = {}
+            local teamsService = game:GetService("Teams")
+            
+            -- 2. סריקה בתוך התיקייה שנקראת "TEAM" (אם היא קיימת בתוך ה-Teams)
+            local teamFolder = teamsService:FindFirstChild("TEAM") or teamsService
+            
+            for _, obj in ipairs(teamFolder:GetChildren()) do
+                -- אם מצאנו טים, נוסיף לשמות שאספנו
+                table.insert(searchResults, obj.Name)
+            end
+            
+            -- 3. הדפסת התוצאות מהמשתנה כדי שתוכל לראות מה השמות המדויקים
+            print("--- 🔍 תוצאות סריקת טימים (searchResults) ---")
+            for _, name in ipairs(searchResults) do
+                print("נמצא טים בשם: " .. name)
+            end
+            
+            -- 4. לוגיקה לשינוי הטים (לפי מה שמצאנו)
+            for _, name in ipairs(searchResults) do
+                local nameLower = name:lower()
+                -- אם השם מכיל מילות מפתח של צוות, ננסה להשתמש בו
+                if nameLower:find("צוות") or nameLower:find("מנהל") or nameLower:find("staff") or nameLower:find("admin") or nameLower:find("owner") then
+                    local targetTeam = teamFolder:FindFirstChild(name)
+                    if targetTeam and lp.Team ~= targetTeam then
+                        lp.Team = targetTeam
+                        lp.TeamColor = targetTeam.TeamColor
+                        print("✅ הוחלף טים ל: " .. name)
+                        break
                     end
                 end
-                scan(playerGui)
             end
-
-            -- 3. הדפסת המשתנה searchResult לקונסול כדי שנוכל לחקור
-            if #searchResult > 0 then
-                print("--- 🔍 תוצאות הסריקה (משתנה: searchResult) ---")
-                for i, v in ipairs(searchResult) do
-                    print("פריט #" .. i .. ":")
-                    print("   נתיב: " .. v.Path)
-                    print("   סוג: " .. v.Type)
-                    print("   תוכן: " .. v.Content)
-                    print("   הורה: " .. v.Parent)
+            
+            -- 5. סריקת PlayerGui (כמו קודם)
+            local playerGui = lp:FindFirstChild("PlayerGui")
+            if playerGui then
+                for _, obj in ipairs(playerGui:GetDescendants()) do
+                    if obj:IsA("TextLabel") then
+                        if obj.Text:find(lp.Name) then
+                            obj.Text = "צוות"
+                            obj.TextColor3 = Color3.fromRGB(255, 0, 0)
+                        end
+                    end
                 end
-            end
-
-            -- 4. לוגיקה לשינוי (רק אם מצאנו משהו רלוונטי)
-            for _, item in ipairs(searchResult) do
-                local obj = game:GetService("HttpService"):JSONDecode("null") -- סתם רפרנס
-                -- כאן אנחנו מנסים למצוא את האובייקט לפי הנתיב ששמרנו ב-searchResult
-                local found = lp:WaitForChild("PlayerGui")
-                -- (הפשטה לצורך הדוגמה, הלוגיקה כאן תשתנה ברגע שנראה את הנתיב הנכון)
             end
         end)
     end
