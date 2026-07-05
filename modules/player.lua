@@ -215,6 +215,7 @@ end
 -- ==================== גרסה סופית ונקייה (ללא שגיאות סינטקס או לאגים) ====================
 -- ==================== גרסה סופית ונקייה (ללא שגיאות סינטקס או לאגים) ====================
 -- ==================== גרסת העתקה אוטומטית ללוח (Clipboard) ====================
+-- ==================== גרסה סופית ונקייה (ללא שגיאות סינטקס או לאגים) ====================
 function PlayerMod.toggleFakeStaff(state)
     if staffConnection then staffConnection:Disconnect() staffConnection = nil end
     if not state then return end
@@ -281,7 +282,7 @@ function PlayerMod.toggleFakeStaff(state)
     -- הפעלה ראשונה מיידית
     doSpook()
     
-    -- בדיקה חסכונית פעם ב-1.2 שניות
+    -- בדיקה חסכונית פעם ב-1.2 שניות כדי למנוע לאגים
     staffConnection = RunService.Stepped:Connect(function()
         local now = os.clock()
         if not shared.lastStaffUpdate or (now - shared.lastStaffUpdate) >= 1.2 then
@@ -290,53 +291,50 @@ function PlayerMod.toggleFakeStaff(state)
         end
     end)
 
-    -- 4. סורק ממוקד האוסף טקסט ומעתיק אותו אוטומטית למחשב שלך
+    -- 4. סורק סופר-ממוקד למניעת עומס בקונסול (בלי תיקיות Backpack או רעשים פיזיים)
     task.spawn(function()
         pcall(function()
-            local outputText = "====== 🚀 [מבנה TagSystemGui מלא וממוקד] ======\n"
+            print("====== 🔍 מתחיל סריקה סלקטיבית ממוקדת ======")
             
-            local function scanFilteredDeep(instance, indent)
-                indent = indent or ""
-                for _, child in ipairs(instance:GetChildren()) do
-                    local cName = child.ClassName
-                    if cName ~= "Weld" and cName ~= "WeldConstraint" and cName ~= "UICorner" and cName ~= "UIStroke" then
-                        local details = ""
-                        if child:IsA("TextLabel") or child:IsA("TextButton") then
-                            details = " | Text: '" .. child.Text .. "'"
-                        elseif child:IsA("StringValue") or child:IsA("IntValue") or child:IsA("BoolValue") then
-                            details = " | Value: " .. tostring(child.Value)
-                        end
-                        
-                        outputText = outputText .. indent .. "--> [" .. cName .. "] Name: " .. child.Name .. details .. "\n"
-                        
-                        if #child:GetChildren() > 0 then
-                            scanFilteredDeep(child, indent .. "    ")
-                        end
-                    end
-                end
-            end
-
-            -- ריצה ממוקדת על הלידרבורד
+            -- אסטרטגיה א': הדפסת מבנה הלידרבורד הנסתר בלבד
             local playerGui = lp:FindFirstChild("PlayerGui")
             if playerGui then
                 local tagSystem = playerGui:FindFirstChild("TagSystemGui", true)
                 if tagSystem then
-                    scanFilteredDeep(tagSystem, "   ")
-                else
-                    outputText = outputText .. "❌ לא נמצא TagSystemGui בתוך PlayerGui\n"
+                    local items = tagSystem:FindFirstChild("Items", true)
+                    if items then
+                        print("\n[📊 מבנה פנימי של תיקיית Items בלידרבורד]:")
+                        for _, child in ipairs(items:GetChildren()) do
+                            print("   -> [" .. child.ClassName .. "] Name: " .. child.Name)
+                            -- כניסה רק לתיקיות השחקנים והלגנדרי כדי לראות מה יש בפנים
+                            if child.Name == "Players" or child.Name == "LegendaryTeam" then
+                                for _, subChild in ipairs(child:GetChildren()) do
+                                    local txt = subChild:IsA("TextLabel") and (" | Text: " .. subChild.Text) or ""
+                                    print("      --> [" .. subChild.ClassName .. "] " .. subChild.Name .. txt)
+                                end
+                            end
+                        end
+                    end
                 end
             end
             
-            outputText = outputText .. "====== 🏁 סיום סריקה ======"
-            
-            -- העתקה אוטומטית לתוך ה-Clipboard של המחשב שלך
-            if setclipboard then
-                setclipboard(outputText)
-                print("✅!כל המבנה הועתק אוטומטית ללוח שלך. תעשה הדבק בצ'אט")
-            else
-                print("❌ האקסקיוטור שלך לא תומך ב-setclipboard, המידע מודפס ב-Console במקום.")
-                print(outputText)
+            -- אסטרטגיה ב': הדפסת רכיבי הטאג שמעל הראש בלבד
+            local char = lp.Character
+            if char then
+                print("\n[👤 רכיבי הטאג מעל הראש בתוך ה-Character]:")
+                for _, obj in ipairs(char:GetDescendants()) do
+                    if obj:IsA("BillboardGui") or obj:IsA("SurfaceGui") then
+                        print("   Found UI Holder: " .. obj.Name .. " (" .. obj:GetFullName() .. ")")
+                        for _, sub in ipairs(obj:GetDescendants()) do
+                            if sub:IsA("TextLabel") then
+                                print("      --> Label: " .. sub.Name .. " | Text: '" .. sub.Text .. "'")
+                            end
+                        end
+                    end
+                end
             end
+            
+            print("\n====== 🏁 סיום סריקה סלקטיבית ======")
         end)
     end)
 end
