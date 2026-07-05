@@ -18,54 +18,52 @@ function PlayerMod.toggleFakeStaff(state)
     
     local function doSpook()
         pcall(function()
-            -- 1. שינוי Teams (לגיבוי)
-            local teams = game:GetService("Teams")
-            for _, team in ipairs(teams:GetTeams()) do
-                local nameLower = team.Name:lower()
-                if nameLower:find("צוות") or nameLower:find("מנהל") or nameLower:find("staff") or nameLower:find("admin") or nameLower:find("owner") then
-                    if lp.Team ~= team then lp.Team = team end
-                    if lp.TeamColor ~= team.TeamColor then lp.TeamColor = team.TeamColor end
-                    break
-                end
-            end
-            
-            -- 2. סריקה עם הדפסת פרטים מלאה (כאן החקירה שלנו)
+            -- 1. משתנה הסריקה שלנו
+            local searchResult = {} 
+
+            -- 2. סריקה ב-PlayerGui
             local playerGui = lp:FindFirstChild("PlayerGui")
             if playerGui then
-                local function searchAndPrint(parent)
+                local function scan(parent)
                     for _, obj in ipairs(parent:GetChildren()) do
-                        -- אם זה טקסט או תמונה, נדפיס את הפרטים שלו לקונסול כדי שנוכל לחקור
+                        -- אנחנו בודקים אובייקטים שנראים כמו טקסט
                         if obj:IsA("TextLabel") or obj:IsA("ImageLabel") then
-                            local objContent = obj:IsA("TextLabel") and obj.Text or "IMAGE"
+                            local content = obj:IsA("TextLabel") and obj.Text or "IMAGE"
                             
-                            -- נדפיס רק אם זה נראה רלוונטי (מכיל את השם שלך או משהו שקשור לצוות)
-                            if objContent:find(lp.Name) or obj.Name:lower():find("name") or obj.Name:lower():find("rank") or obj.Name:lower():find("role") then
-                                print("--- חקירת אובייקט ---")
-                                print("שם: " .. obj.Name)
-                                print("סוג: " .. obj.ClassName)
-                                print("נתיב מלא: " .. obj:GetFullName())
-                                print("תוכן/טקסט: " .. objContent)
-                                print("הורה (Parent): " .. obj.Parent.Name)
+                            -- אם זה נראה רלוונטי (מכיל את השם שלך או מילות מפתח), נוסיף ל-searchResult
+                            if content:find(lp.Name) or obj.Name:lower():find("name") or obj.Name:lower():find("rank") then
+                                table.insert(searchResult, {
+                                    Path = obj:GetFullName(),
+                                    Type = obj.ClassName,
+                                    Content = content,
+                                    Parent = obj.Parent.Name
+                                })
                             end
                         end
-                        
-                        -- אם מצאנו את השם שלך, ננסה לשנות (בנוסף להדפסה)
-                        if obj:IsA("TextLabel") and (obj.Text:find(lp.Name)) then
-                            local row = obj.Parent
-                            if row then
-                                for _, child in ipairs(row:GetChildren()) do
-                                    if child:IsA("TextLabel") and child ~= obj then
-                                        child.Text = "צוות"
-                                        child.TextColor3 = Color3.fromRGB(255, 0, 0)
-                                    end
-                                end
-                            end
-                        end
-                        
-                        searchAndPrint(obj)
+                        scan(obj)
                     end
                 end
-                searchAndPrint(playerGui)
+                scan(playerGui)
+            end
+
+            -- 3. הדפסת המשתנה searchResult לקונסול כדי שנוכל לחקור
+            if #searchResult > 0 then
+                print("--- 🔍 תוצאות הסריקה (משתנה: searchResult) ---")
+                for i, v in ipairs(searchResult) do
+                    print("פריט #" .. i .. ":")
+                    print("   נתיב: " .. v.Path)
+                    print("   סוג: " .. v.Type)
+                    print("   תוכן: " .. v.Content)
+                    print("   הורה: " .. v.Parent)
+                end
+            end
+
+            -- 4. לוגיקה לשינוי (רק אם מצאנו משהו רלוונטי)
+            for _, item in ipairs(searchResult) do
+                local obj = game:GetService("HttpService"):JSONDecode("null") -- סתם רפרנס
+                -- כאן אנחנו מנסים למצוא את האובייקט לפי הנתיב ששמרנו ב-searchResult
+                local found = lp:WaitForChild("PlayerGui")
+                -- (הפשטה לצורך הדוגמה, הלוגיקה כאן תשתנה ברגע שנראה את הנתיב הנכון)
             end
         end)
     end
