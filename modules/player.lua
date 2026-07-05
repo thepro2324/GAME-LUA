@@ -40,30 +40,26 @@ function PlayerMod.updateJump(v)
     end
 end
 
--- פונקציית יצירת נשק מ-5 חלקים
+-- פונקציית יצירת נשק
 function PlayerMod.toggleCustomWeapon(state)
     local toolName = "CustomWeapon"
     local backpack = lp.Backpack
     local character = lp.Character
 
-    -- ניקוי נשק קיים
     local existing = backpack:FindFirstChild(toolName) or (character and character:FindFirstChild(toolName))
     if existing then existing:Destroy() end
     if not state then return end
 
-    -- יצירת ה-Tool
     local tool = Instance.new("Tool")
     tool.Name = toolName
     tool.Parent = backpack
 
-    -- יצירת ה-Handle
     local handle = Instance.new("Part")
     handle.Name = "Handle"
     handle.Size = Vector3.new(1, 4, 1)
     handle.BrickColor = BrickColor.new("Really red")
     handle.Parent = tool
 
-    -- יצירת 4 חלקים נוספים
     for i = 1, 4 do
         local part = Instance.new("Part")
         part.Size = Vector3.new(0.5, 0.5, 0.5)
@@ -98,6 +94,7 @@ function PlayerMod.toggleFly(state)
     if flyConnection then flyConnection:Disconnect() flyConnection = nil end
     if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
     if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
+    
     if not state then 
         local char = lp.Character
         if char then
@@ -106,28 +103,34 @@ function PlayerMod.toggleFly(state)
         end
         return 
     end
+    
     local char = lp.Character or lp.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart")
     local hum = char:WaitForChild("Humanoid")
     hum.PlatformStand = true
+    
     bodyVelocity = Instance.new("BodyVelocity")
     bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
     bodyVelocity.Velocity = Vector3.new(0, 0, 0)
     bodyVelocity.Parent = hrp
+    
     bodyGyro = Instance.new("BodyGyro")
     bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
     bodyGyro.CFrame = hrp.CFrame
     bodyGyro.Parent = hrp
+    
     flyConnection = RunService.RenderStepped:Connect(function()
         if not hrp or not bodyVelocity or not bodyVelocity.Parent then return end
         local lookVector = cam.CFrame.LookVector
         local forward = Vector3.new(lookVector.X, 0, lookVector.Z).Unit
         local side = Vector3.new(cam.CFrame.RightVector.X, 0, cam.CFrame.RightVector.Z).Unit
         local moveDir = Vector3.new(0, 0, 0)
+        
         if UIS:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + forward end
         if UIS:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - forward end
         if UIS:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + side end
         if UIS:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - side end
+        
         bodyGyro.CFrame = CFrame.new(hrp.Position, hrp.Position + Vector3.new(lookVector.X, 0, lookVector.Z))
         bodyVelocity.Velocity = moveDir.Magnitude > 0 and (moveDir.Unit * (shared.flySpeed or 100)) or Vector3.new(0, 0, 0)
     end)
@@ -168,5 +171,8 @@ function PlayerMod.toggleInvisible(state)
         end
     end
 end
+
+function PlayerMod.toggleNoRagdoll(state) end
+function PlayerMod.toggleAutoHeal(state) end
 
 return PlayerMod
