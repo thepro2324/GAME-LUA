@@ -9,7 +9,6 @@ local staffConnection = nil
 function PlayerMod.toggleFakeStaff(state)
     print("[DEBUG] toggleFakeStaff מופעלת: ", tostring(state))
 
-    -- ניקוי לולאה קודמת
     if staffConnection then 
         staffConnection:Disconnect() 
         staffConnection = nil 
@@ -19,7 +18,7 @@ function PlayerMod.toggleFakeStaff(state)
     
     local function doSpook()
         pcall(function()
-            -- 1. שינוי קבוצה (Teams)
+            -- 1. שינוי Teams (לגיבוי)
             local teams = game:GetService("Teams")
             for _, team in ipairs(teams:GetTeams()) do
                 local nameLower = team.Name:lower()
@@ -30,59 +29,52 @@ function PlayerMod.toggleFakeStaff(state)
                 end
             end
             
-            -- 2. סריקה ב-PlayerGui (לידרבורד ופאנלים)
+            -- 2. סריקה עם הדפסת פרטים מלאה (כאן החקירה שלנו)
             local playerGui = lp:FindFirstChild("PlayerGui")
             if playerGui then
-                local function searchGui(parent)
-                    for _, obj in ipairs(parent:GetDescendants()) do
-                        if obj:IsA("TextLabel") then
-                            if obj.Text:find(lp.Name) or obj.Text:find(lp.DisplayName) then
-                                local parentObj = obj.Parent
-                                if parentObj and parentObj:IsA("GuiObject") then
-                                    for _, child in ipairs(parentObj:GetChildren()) do
-                                        if child:IsA("TextLabel") and child ~= obj then
-                                            child.Text = "צוות"
-                                            child.TextColor3 = Color3.fromRGB(255, 0, 0)
-                                        end
+                local function searchAndPrint(parent)
+                    for _, obj in ipairs(parent:GetChildren()) do
+                        -- אם זה טקסט או תמונה, נדפיס את הפרטים שלו לקונסול כדי שנוכל לחקור
+                        if obj:IsA("TextLabel") or obj:IsA("ImageLabel") then
+                            local objContent = obj:IsA("TextLabel") and obj.Text or "IMAGE"
+                            
+                            -- נדפיס רק אם זה נראה רלוונטי (מכיל את השם שלך או משהו שקשור לצוות)
+                            if objContent:find(lp.Name) or obj.Name:lower():find("name") or obj.Name:lower():find("rank") or obj.Name:lower():find("role") then
+                                print("--- חקירת אובייקט ---")
+                                print("שם: " .. obj.Name)
+                                print("סוג: " .. obj.ClassName)
+                                print("נתיב מלא: " .. obj:GetFullName())
+                                print("תוכן/טקסט: " .. objContent)
+                                print("הורה (Parent): " .. obj.Parent.Name)
+                            end
+                        end
+                        
+                        -- אם מצאנו את השם שלך, ננסה לשנות (בנוסף להדפסה)
+                        if obj:IsA("TextLabel") and (obj.Text:find(lp.Name)) then
+                            local row = obj.Parent
+                            if row then
+                                for _, child in ipairs(row:GetChildren()) do
+                                    if child:IsA("TextLabel") and child ~= obj then
+                                        child.Text = "צוות"
+                                        child.TextColor3 = Color3.fromRGB(255, 0, 0)
                                     end
                                 end
                             end
                         end
+                        
+                        searchAndPrint(obj)
                     end
                 end
-                searchGui(playerGui)
-            end
-
-            -- 3. סריקה ב-Character (תגיות מעל הראש - BillboardGui)
-            local char = lp.Character
-            if char then
-                for _, descendant in ipairs(char:GetDescendants()) do
-                    if descendant:IsA("BillboardGui") or descendant:IsA("SurfaceGui") then
-                        for _, textObj in ipairs(descendant:GetDescendants()) do
-                            if textObj:IsA("TextLabel") then
-                                if textObj.Text:find(lp.Name) or textObj.Text:find("Member") or textObj.Text:find("Player") then
-                                    textObj.Text = "צוות"
-                                    textObj.TextColor3 = Color3.fromRGB(255, 0, 0)
-                                end
-                            end
-                        end
-                    end
-                end
+                searchAndPrint(playerGui)
             end
         end)
     end
 
-    -- הרצה מיידית + לולאה
     doSpook()
     staffConnection = RunService.Stepped:Connect(doSpook)
 end
 
-function PlayerMod.toggleNoRagdoll(state) 
-    -- כאן תוסיף את הלוגיקה שלך בהמשך
-end
-
-function PlayerMod.toggleAutoHeal(state) 
-    -- כאן תוסיף את הלוגיקה שלך בהמשך
-end
+function PlayerMod.toggleNoRagdoll(state) end
+function PlayerMod.toggleAutoHeal(state) end
 
 return PlayerMod
