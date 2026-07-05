@@ -49,10 +49,14 @@ function PlayerMod.toggleInfiniteJump(state)
         infJumpConnection = UIS.JumpRequest:Connect(function()
             local char = lp.Character
             if char then
-                local hum = char:FindFirstChildOfClass("Humanoid")
-                -- נוודא שהדמות לא ב-PlatformStand (כי אז אי אפשר לקפוץ)
-                if hum and hum.PlatformStand == false then
-                    hum.Jump = true -- זו הדרך הכי "נקייה" ברובלוקס לגרום לקפיצה
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    -- זו הדרך הפיזיקלית: אנחנו נותנים "דחיפה" קטנה למעלה
+                    -- AssemblyLinearVelocity עוקף את ה-Humanoid
+                    local currentVelocity = hrp.AssemblyLinearVelocity
+                    hrp.AssemblyLinearVelocity = Vector3.new(currentVelocity.X, 50, currentVelocity.Z)
+                    
+                    print("Jump executed via Physics!") -- בדיקה: אם זה מופיע ב-F9 ולא קופץ, יש בעיה אחרת
                 end
             end
         end)
