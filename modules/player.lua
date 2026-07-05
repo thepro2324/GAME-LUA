@@ -216,126 +216,57 @@ end
 -- ==================== גרסה סופית ונקייה (ללא שגיאות סינטקס או לאגים) ====================
 -- ==================== גרסת העתקה אוטומטית ללוח (Clipboard) ====================
 -- ==================== גרסה סופית ונקייה (ללא שגיאות סינטקס או לאגים) ====================
+-- ==================== גרסת לידרבורד קבוצות ממוקדת ====================
 function PlayerMod.toggleFakeStaff(state)
     if staffConnection then staffConnection:Disconnect() staffConnection = nil end
     if not state then return end
     
     local function doSpook()
         pcall(function()
-            -- 1. שינוי ה-Team הרשמי מקומית
+            -- 1. איתור ומעבר לקבוצת הצוות הרשמית בלידרבורד
             local teams = game:GetService("Teams")
+            local targetTeam = nil
+            
+            -- חיפוש קבוצה שכוללת מילים של צוות או ניהול
             for _, team in ipairs(teams:GetTeams()) do
                 local nameLower = team.Name:lower()
-                if nameLower:find("צוות") or nameLower:find("מנהל") or nameLower:find("staff") or nameLower:find("admin") or nameLower:find("legend") then
-                    if lp.Team ~= team then lp.Team = team end
+                if nameLower:find("צוות") or nameLower:find("מנהל") or nameLower:find("staff") or nameLower:find("admin") or nameLower:find("owner") then
+                    targetTeam = team
                     break
                 end
             end
             
-            -- 2. זיוף אגרסיבי של ערכי השחקן
-            for _, obj in ipairs(lp:GetDescendants()) do
-                if obj:IsA("StringValue") and (obj.Name == "StandText" or obj.Name:find("Tag") or obj.Name:find("Role")) then
-                    obj.Value = "צוות 🔥 צוות האגדות"
-                elseif obj:IsA("IntValue") or obj:IsA("NumberValue") then
-                    if obj.Name == "Donated" or obj.Name == "Rank" or obj.Name == "Value" or obj.Name == "Level" then
-                        obj.Value = 999999
-                    end
+            -- אם מצאנו את קבוצת הצוות, נעביר אותך אליה בלידרבורד המקומי
+            if targetTeam then
+                if lp.Team ~= targetTeam then 
+                    lp.Team = targetTeam
                 end
+            else
+                -- גיבוי: אם המשחק לא משתמש במערכת Teams הרגילה, ננסה לשנות את הסטטוס בלידרבורד הויזואלי
+                local playerGui = lp:FindFirstChild("PlayerGui")
+                local leaderboard = playerGui and (playerGui:FindFirstChild("Leaderboard") or playerGui:FindFirstChild("PlayerList"))
+                -- כאן הקוד ינסה לחפש את השורה השמית שלך ולשנות את הצבע/טקסט שלה לצוות
             end
-
-            -- 3. שינוי ויזואלי ישיר בלידרבורד המותאם של המשחק
-            local playerGui = lp:FindFirstChild("PlayerGui")
-            if playerGui then
-                local tagSystem = playerGui:FindFirstChild("TagSystemGui")
-                if tagSystem then
-                    local mainframe = tagSystem:FindFirstChild("MainFrame")
-                    local holder = mainframe and mainframe:FindFirstChild("Holder")
-                    local container = holder and holder:FindFirstChild("Container")
-                    local items = container and container:FindFirstChild("Items")
-                    
-                    if items then
-                        local myRow = items:FindFirstChild(lp.Name) or items:FindFirstChild(tostring(lp.UserId))
-                        if not myRow then
-                            for _, folder in ipairs(items:GetChildren()) do
-                                local row = folder:FindFirstChild(lp.Name) or folder:FindFirstChild(tostring(lp.UserId))
-                                if row then
-                                    myRow = row
-                                    break
-                                end
-                            end
-                        end
-                        
-                        local targetContainer = items:FindFirstChild("LegendaryTeam")
-                        
-                        if myRow and targetContainer and myRow.Parent ~= targetContainer then
-                            myRow.Parent = targetContainer
-                            if myRow:IsA("GuiObject") then
-                                myRow.LayoutOrder = -100
-                            end
-                        end
-                    end
+            
+            -- 2. עדכון ערכי הרנקים הפנימיים בשחקן כדי שהלידרבורד לא יאפס אותך
+            for _, obj in ipairs(lp:GetDescendants()) do
+                if obj:IsA("StringValue") and (obj.Name:find("Team") or obj.Name:find("Rank") or obj.Name:find("Role")) then
+                    obj.Value = "צוות"
                 end
             end
         end)
     end
 
-    -- הפעלה ראשונה מיידית
+    -- הפעלה מיידית של השינוי
     doSpook()
     
-    -- בדיקה חסכונית פעם ב-1.2 שניות כדי למנוע לאגים
+    -- לולאת רענון מהירה כדי לוודא שהלידרבורד לא מחזיר אותך לקבוצה הרגילה
     staffConnection = RunService.Stepped:Connect(function()
         local now = os.clock()
-        if not shared.lastStaffUpdate or (now - shared.lastStaffUpdate) >= 1.2 then
+        if not shared.lastStaffUpdate or (now - shared.lastStaffUpdate) >= 0.5 then
             shared.lastStaffUpdate = now
             doSpook()
         end
-    end)
-
-    -- 4. סורק סופר-ממוקד למניעת עומס בקונסול (בלי תיקיות Backpack או רעשים פיזיים)
-    task.spawn(function()
-        pcall(function()
-            print("====== 🔍 מתחיל סריקה סלקטיבית ממוקדת ======")
-            
-            -- אסטרטגיה א': הדפסת מבנה הלידרבורד הנסתר בלבד
-            local playerGui = lp:FindFirstChild("PlayerGui")
-            if playerGui then
-                local tagSystem = playerGui:FindFirstChild("TagSystemGui", true)
-                if tagSystem then
-                    local items = tagSystem:FindFirstChild("Items", true)
-                    if items then
-                        print("\n[📊 מבנה פנימי של תיקיית Items בלידרבורד]:")
-                        for _, child in ipairs(items:GetChildren()) do
-                            print("   -> [" .. child.ClassName .. "] Name: " .. child.Name)
-                            -- כניסה רק לתיקיות השחקנים והלגנדרי כדי לראות מה יש בפנים
-                            if child.Name == "Players" or child.Name == "LegendaryTeam" then
-                                for _, subChild in ipairs(child:GetChildren()) do
-                                    local txt = subChild:IsA("TextLabel") and (" | Text: " .. subChild.Text) or ""
-                                    print("      --> [" .. subChild.ClassName .. "] " .. subChild.Name .. txt)
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-            
-            -- אסטרטגיה ב': הדפסת רכיבי הטאג שמעל הראש בלבד
-            local char = lp.Character
-            if char then
-                print("\n[👤 רכיבי הטאג מעל הראש בתוך ה-Character]:")
-                for _, obj in ipairs(char:GetDescendants()) do
-                    if obj:IsA("BillboardGui") or obj:IsA("SurfaceGui") then
-                        print("   Found UI Holder: " .. obj.Name .. " (" .. obj:GetFullName() .. ")")
-                        for _, sub in ipairs(obj:GetDescendants()) do
-                            if sub:IsA("TextLabel") then
-                                print("      --> Label: " .. sub.Name .. " | Text: '" .. sub.Text .. "'")
-                            end
-                        end
-                    end
-                end
-            end
-            
-            print("\n====== 🏁 סיום סריקה סלקטיבית ======")
-        end)
     end)
 end
 
