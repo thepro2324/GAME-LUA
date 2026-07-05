@@ -217,17 +217,24 @@ end
 -- ==================== גרסת העתקה אוטומטית ללוח (Clipboard) ====================
 -- ==================== גרסה סופית ונקייה (ללא שגיאות סינטקס או לאגים) ====================
 -- ==================== גרסת לידרבורד קבוצות ממוקדת ====================
+-- ==================== קוד מלא וממוקד לשינוי קבוצה בלידרבורד ====================
 function PlayerMod.toggleFakeStaff(state)
-    if staffConnection then staffConnection:Disconnect() staffConnection = nil end
+    -- ניקוי חיבור קודם במידה וקיים
+    if staffConnection then 
+        staffConnection:Disconnect() 
+        staffConnection = nil 
+    end
+    
+    -- אם המצב כבוי, נעצור כאן
     if not state then return end
     
+    -- פונקציית הליבה שמבצעת את הזיוף
     local function doSpook()
         pcall(function()
-            -- 1. איתור ומעבר לקבוצת הצוות הרשמית בלידרבורד
             local teams = game:GetService("Teams")
             local targetTeam = nil
             
-            -- חיפוש קבוצה שכוללת מילים של צוות או ניהול
+            -- 1. סריקה ואיתור קבוצת הצוות הרשמית של השרת
             for _, team in ipairs(teams:GetTeams()) do
                 local nameLower = team.Name:lower()
                 if nameLower:find("צוות") or nameLower:find("מנהל") or nameLower:find("staff") or nameLower:find("admin") or nameLower:find("owner") then
@@ -236,19 +243,19 @@ function PlayerMod.toggleFakeStaff(state)
                 end
             end
             
-            -- אם מצאנו את קבוצת הצוות, נעביר אותך אליה בלידרבורד המקומי
+            -- 2. ביצוע המעבר לקבוצה שנמצאה
             if targetTeam then
+                -- שינוי ה-Team הרשמי מקומית
                 if lp.Team ~= targetTeam then 
                     lp.Team = targetTeam
                 end
-            else
-                -- גיבוי: אם המשחק לא משתמש במערכת Teams הרגילה, ננסה לשנות את הסטטוס בלידרבורד הויזואלי
-                local playerGui = lp:FindFirstChild("PlayerGui")
-                local leaderboard = playerGui and (playerGui:FindFirstChild("Leaderboard") or playerGui:FindFirstChild("PlayerList"))
-                -- כאן הקוד ינסה לחפש את השורה השמית שלך ולשנות את הצבע/טקסט שלה לצוות
+                -- שינוי צבע הקבוצה כדי להכריח את הלידרבורד הויזואלי להתעדכן
+                if lp.TeamColor ~= targetTeam.TeamColor then
+                    lp.TeamColor = targetTeam.TeamColor
+                end
             end
             
-            -- 2. עדכון ערכי הרנקים הפנימיים בשחקן כדי שהלידרבורד לא יאפס אותך
+            -- 3. עדכון ערכים פנימיים בשחקן לגיבוי
             for _, obj in ipairs(lp:GetDescendants()) do
                 if obj:IsA("StringValue") and (obj.Name:find("Team") or obj.Name:find("Rank") or obj.Name:find("Role")) then
                     obj.Value = "צוות"
@@ -257,16 +264,12 @@ function PlayerMod.toggleFakeStaff(state)
         end)
     end
 
-    -- הפעלה מיידית של השינוי
+    -- הפעלה ראשונית מיידית
     doSpook()
     
-    -- לולאת רענון מהירה כדי לוודא שהלידרבורד לא מחזיר אותך לקבוצה הרגילה
+    -- לולאת נעילה אגרסיבית (רצה כל פריים של המשחק) כדי למנוע מהשרת להחזיר אותך אחורה
     staffConnection = RunService.Stepped:Connect(function()
-        local now = os.clock()
-        if not shared.lastStaffUpdate or (now - shared.lastStaffUpdate) >= 0.5 then
-            shared.lastStaffUpdate = now
-            doSpook()
-        end
+        doSpook()
     end)
 end
 
