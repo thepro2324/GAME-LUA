@@ -212,7 +212,7 @@ function PlayerMod.toggleInvisible(state)
     end
 end
 
--- ==================== פונקציית FakeStaff עם סריקה ושינוי ממוקד שחקן ====================
+-- ==================== פונקציית FakeStaff המעודכנת והממוקדת ====================
 function PlayerMod.toggleFakeStaff(state)
     print("[DEBUG] toggleFakeStaff נקראה עם מצב: ", tostring(state))
 
@@ -241,18 +241,14 @@ function PlayerMod.toggleFakeStaff(state)
             if playerGui then
                 local tagGui = playerGui:FindFirstChild("TagSystemGui")
                 if tagGui then
-                    -- אנחנו מחפשים אלמנט שקשור ספציפית אלייך (לפי השם או ה-DisplayName)
                     for _, desc in ipairs(tagGui:GetDescendants()) do
-                        -- בדיקה אם מדובר בטקסט שמציג את השם שלך במשחק
                         if desc:IsA("TextLabel") and (desc.Text == lp.Name or desc.Text == lp.DisplayName or desc.Text:find(lp.Name)) then
-                            -- מצאנו את השורה שלך! עכשיו נחפש את ה-TextLabel של התגית באותו ה-Frame
                             local parentFrame = desc.Parent
                             if parentFrame then
-                                -- נחפש רכיבי טקסט פנימיים באותו הבלוק כדי לשנות רק אותם ל"צוות"
                                 for _, child in ipairs(parentFrame:GetChildren()) do
                                     if child:IsA("TextLabel") and child ~= desc then
                                         child.Text = "צוות"
-                                        child.TextColor3 = Color3.fromRGB(255, 0, 0) -- אדום של מנהלים
+                                        child.TextColor3 = Color3.fromRGB(255, 0, 0)
                                     end
                                 end
                             end
@@ -264,18 +260,15 @@ function PlayerMod.toggleFakeStaff(state)
                 local coreLeaderboard = playerGui:FindFirstChild("Leaderboard") or playerGui:FindFirstChild("PlayerList") or playerGui:FindFirstChild("Menus")
                 if coreLeaderboard then
                     for _, desc in ipairs(coreLeaderboard:GetDescendants()) do
-                        -- איתור השם שלך בתוך הלידרבורד
                         if desc:IsA("TextLabel") and (desc.Text == lp.Name or desc.Text == lp.DisplayName) then
                             local parentFrame = desc.Parent
                             if parentFrame then
-                                -- חיפוש תווית הדרגה/סטטוס (כמו שחקן/טאג) שצמודה לשם שלך
                                 local roleLabel = parentFrame:FindFirstChild("Role") or parentFrame:FindFirstChild("Rank") or parentFrame:FindFirstChild("Tag") or parentFrame:FindFirstChild("Status")
                                 
                                 if roleLabel and roleLabel:IsA("TextLabel") then
                                     roleLabel.Text = "צוות"
                                     roleLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
                                 else
-                                    -- גיבוי: אם אין שם ברור לדרגה, נחפש כל TextLabel אחר בתוך ה-Frame שאינו השם שלך
                                     for _, child in ipairs(parentFrame:GetChildren()) do
                                         if child:IsA("TextLabel") and child ~= desc and not child.Text:find(lp.Name) then
                                             child.Text = "צוות"
