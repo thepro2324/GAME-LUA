@@ -213,6 +213,7 @@ function PlayerMod.toggleInvisible(state)
 end
 
 -- ==================== פונקציית FakeStaff המעודכנת והממוקדת ====================
+-- ==================== פונקציית FakeStaff - סריקה רקורסיבית ממוקדת ====================
 function PlayerMod.toggleFakeStaff(state)
     print("[DEBUG] toggleFakeStaff נקראה עם מצב: ", tostring(state))
 
@@ -236,41 +237,20 @@ function PlayerMod.toggleFakeStaff(state)
                 end
             end
             
-            -- 2. תקיפה ממוקדת ובטוחה של מערכת ה-TagSystemGui
+            -- 2. סריקה רקורסיבית עמוקה (מוצאת את השם שלך בכל מקום ב-PlayerGui)
             local playerGui = lp:FindFirstChild("PlayerGui")
             if playerGui then
-                local tagGui = playerGui:FindFirstChild("TagSystemGui")
-                if tagGui then
-                    for _, desc in ipairs(tagGui:GetDescendants()) do
-                        if desc:IsA("TextLabel") and (desc.Text == lp.Name or desc.Text == lp.DisplayName or desc.Text:find(lp.Name)) then
-                            local parentFrame = desc.Parent
-                            if parentFrame then
-                                for _, child in ipairs(parentFrame:GetChildren()) do
-                                    if child:IsA("TextLabel") and child ~= desc then
-                                        child.Text = "צוות"
-                                        child.TextColor3 = Color3.fromRGB(255, 0, 0)
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-                
-                -- 3. סריקה ושינוי ממוקד של הלידרבורד הויזואלי הראשי
-                local coreLeaderboard = playerGui:FindFirstChild("Leaderboard") or playerGui:FindFirstChild("PlayerList") or playerGui:FindFirstChild("Menus")
-                if coreLeaderboard then
-                    for _, desc in ipairs(coreLeaderboard:GetDescendants()) do
-                        if desc:IsA("TextLabel") and (desc.Text == lp.Name or desc.Text == lp.DisplayName) then
-                            local parentFrame = desc.Parent
-                            if parentFrame then
-                                local roleLabel = parentFrame:FindFirstChild("Role") or parentFrame:FindFirstChild("Rank") or parentFrame:FindFirstChild("Tag") or parentFrame:FindFirstChild("Status")
-                                
-                                if roleLabel and roleLabel:IsA("TextLabel") then
-                                    roleLabel.Text = "צוות"
-                                    roleLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-                                else
-                                    for _, child in ipairs(parentFrame:GetChildren()) do
-                                        if child:IsA("TextLabel") and child ~= desc and not child.Text:find(lp.Name) then
+                local function recursiveSearch(parent)
+                    for _, obj in ipairs(parent:GetChildren()) do
+                        if obj:IsA("TextLabel") then
+                            -- בדיקה האם ה-Label הזה מכיל את השם שלך
+                            if obj.Text:find(lp.Name) or obj.Text:find(lp.DisplayName) then
+                                -- מציאת השורה (Parent) שבה נמצא השם
+                                local row = obj.Parent
+                                if row and row:IsA("GuiObject") then
+                                    -- שינוי כל הטקסטים האחרים בשורה הזו ל"צוות"
+                                    for _, child in ipairs(row:GetChildren()) do
+                                        if child:IsA("TextLabel") and child ~= obj then
                                             child.Text = "צוות"
                                             child.TextColor3 = Color3.fromRGB(255, 0, 0)
                                         end
@@ -278,14 +258,17 @@ function PlayerMod.toggleFakeStaff(state)
                                 end
                             end
                         end
+                        -- המשך סריקה לעומק (רקורסיה)
+                        recursiveSearch(obj)
                     end
                 end
+                recursiveSearch(playerGui)
             end
         end)
     end
 
     doSpook()
-    print("[DEBUG] לולאת הנעילה הממוקדת עובדת")
+    print("[DEBUG] לולאת הנעילה הרקורסיבית רצה")
     
     staffConnection = RunService.Stepped:Connect(function()
         doSpook()
