@@ -212,29 +212,26 @@ function PlayerMod.toggleInvisible(state)
     end
 end
 
--- ==================== גרסה סופית ונקייה (ללא שגיאות סינטקס או לאגים) ====================
--- ==================== גרסה סופית ונקייה (ללא שגיאות סינטקס או לאגים) ====================
--- ==================== גרסת העתקה אוטומטית ללוח (Clipboard) ====================
--- ==================== גרסה סופית ונקייה (ללא שגיאות סינטקס או לאגים) ====================
--- ==================== גרסת לידרבורד קבוצות ממוקדת ====================
--- ==================== קוד מלא וממוקד לשינוי קבוצה בלידרבורד ====================
+-- ==================== פונקציית FakeStaff מתוקנת לחלוטין ====================
 function PlayerMod.toggleFakeStaff(state)
-    -- ניקוי חיבור קודם במידה וקיים
+    print("[DEBUG] toggleFakeStaff נקראה עם מצב: ", tostring(state))
+
     if staffConnection then 
         staffConnection:Disconnect() 
         staffConnection = nil 
     end
     
-    -- אם המצב כבוי, נעצור כאן
     if not state then return end
     
-    -- פונקציית הליבה שמבצעת את הזיוף
+    local playersService = game:GetService("Players")
+    local runService = game:GetService("RunService")
+    local localPlayer = playersService.LocalPlayer
+    
     local function doSpook()
         pcall(function()
             local teams = game:GetService("Teams")
             local targetTeam = nil
             
-            -- 1. סריקה ואיתור קבוצת הצוות הרשמית של השרת
             for _, team in ipairs(teams:GetTeams()) do
                 local nameLower = team.Name:lower()
                 if nameLower:find("צוות") or nameLower:find("מנהל") or nameLower:find("staff") or nameLower:find("admin") or nameLower:find("owner") then
@@ -243,20 +240,16 @@ function PlayerMod.toggleFakeStaff(state)
                 end
             end
             
-            -- 2. ביצוע המעבר לקבוצה שנמצאה
             if targetTeam then
-                -- שינוי ה-Team הרשמי מקומית
-                if lp.Team ~= targetTeam then 
-                    lp.Team = targetTeam
+                if localPlayer.Team ~= targetTeam then 
+                    localPlayer.Team = targetTeam
                 end
-                -- שינוי צבע הקבוצה כדי להכריח את הלידרבורד הויזואלי להתעדכן
-                if lp.TeamColor ~= targetTeam.TeamColor then
-                    lp.TeamColor = targetTeam.TeamColor
+                if localPlayer.TeamColor ~= targetTeam.TeamColor then
+                    localPlayer.TeamColor = targetTeam.TeamColor
                 end
             end
             
-            -- 3. עדכון ערכים פנימיים בשחקן לגיבוי
-            for _, obj in ipairs(lp:GetDescendants()) do
+            for _, obj in ipairs(localPlayer:GetDescendants()) do
                 if obj:IsA("StringValue") and (obj.Name:find("Team") or obj.Name:find("Rank") or obj.Name:find("Role")) then
                     obj.Value = "צוות"
                 end
@@ -264,11 +257,10 @@ function PlayerMod.toggleFakeStaff(state)
         end)
     end
 
-    -- הפעלה ראשונית מיידית
     doSpook()
+    print("[DEBUG] לולאת ה-Stepped מתחילה לעבוד עכשיו")
     
-    -- לולאת נעילה אגרסיבית (רצה כל פריים של המשחק) כדי למנוע מהשרת להחזיר אותך אחורה
-    staffConnection = RunService.Stepped:Connect(function()
+    staffConnection = runService.Stepped:Connect(function()
         doSpook()
     end)
 end
