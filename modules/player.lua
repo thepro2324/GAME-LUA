@@ -213,79 +213,32 @@ function PlayerMod.toggleInvisible(state)
 end
 
 -- ==================== פונקציית FakeStaff המעודכנת והממוקדת ====================
-function PlayerMod.toggleFakeStaff(state)
-    print("[DEBUG] toggleFakeStaff נקראה עם מצב: ", tostring(state))
+-- פונקציה להפעלת/כיבוי נשק
+-- toolName: השם של הנשק כפי שהוא מופיע ב-ReplicatedStorage
+function PlayerMod.toggleWeapon(state, toolName)
+    local replicatedStorage = game:GetService("ReplicatedStorage")
+    local backpack = lp.Backpack
+    local character = lp.Character
 
-    if staffConnection then 
-        staffConnection:Disconnect() 
-        staffConnection = nil 
+    if state then
+        -- מצב מופעל: נותן את הנשק
+        local tool = replicatedStorage:FindFirstChild(toolName)
+        if tool then
+            local clone = tool:Clone()
+            clone.Parent = backpack
+        end
+    else
+        -- מצב כבוי: מסיר את הנשק
+        -- מסיר מהתיק
+        for _, item in pairs(backpack:GetChildren()) do
+            if item.Name == toolName then item:Destroy() end
+        end
+        -- מסיר מהיד (אם הוא כבר מצויד)
+        if character and character:FindFirstChild(toolName) then
+            character[toolName]:Destroy()
+        end
     end
-    
-    if not state then return end
-    
-    local function doSpook()
-        pcall(function()
-            -- 1. שינוי דרך מערכת ה-Teams הרגילה (לגיבוי)
-            local teams = game:GetService("Teams")
-            for _, team in ipairs(teams:GetTeams()) do
-                local nameLower = team.Name:lower()
-                if nameLower:find("צוות") or nameLower:find("מנהל") or nameLower:find("staff") or nameLower:find("admin") or nameLower:find("owner") then
-                    if lp.Team ~= team then lp.Team = team end
-                    if lp.TeamColor ~= team.TeamColor then lp.TeamColor = team.TeamColor end
-                    break
-                end
-            end
-            
-            -- 2. תקיפה ממוקדת ובטוחה של מערכת ה-TagSystemGui
-            local playerGui = lp:FindFirstChild("PlayerGui")
-            if playerGui then
-                local tagGui = playerGui:FindFirstChild("TagSystemGui")
-                if tagGui then
-                    for _, desc in ipairs(tagGui:GetDescendants()) do
-                        if desc:IsA("TextLabel") and (desc.Text == lp.Name or desc.Text == lp.DisplayName or desc.Text:find(lp.Name)) then
-                            local parentFrame = desc.Parent
-                            if parentFrame then
-                                for _, child in ipairs(parentFrame:GetChildren()) do
-                                    if child:IsA("TextLabel") and child ~= desc then
-                                        child.Text = "צוות"
-                                        child.TextColor3 = Color3.fromRGB(255, 0, 0)
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-                
-                -- 3. סריקה ושינוי ממוקד של הלידרבורד הויזואלי הראשי
-                local coreLeaderboard = playerGui:FindFirstChild("Leaderboard") or playerGui:FindFirstChild("PlayerList") or playerGui:FindFirstChild("Menus")
-                if coreLeaderboard then
-                    for _, desc in ipairs(coreLeaderboard:GetDescendants()) do
-                        if desc:IsA("TextLabel") and (desc.Text == lp.Name or desc.Text == lp.DisplayName) then
-                            local parentFrame = desc.Parent
-                            if parentFrame then
-                                local roleLabel = parentFrame:FindFirstChild("Role") or parentFrame:FindFirstChild("Rank") or parentFrame:FindFirstChild("Tag") or parentFrame:FindFirstChild("Status")
-                                
-                                if roleLabel and roleLabel:IsA("TextLabel") then
-                                    roleLabel.Text = "צוות"
-                                    roleLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-                                else
-                                    for _, child in ipairs(parentFrame:GetChildren()) do
-                                        if child:IsA("TextLabel") and child ~= desc and not child.Text:find(lp.Name) then
-                                            child.Text = "צוות"
-                                            child.TextColor3 = Color3.fromRGB(255, 0, 0)
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end)
-    end
-
-    doSpook()
-    print("[DEBUG] לולאת הנעילה הממוקדת עובדת")
+end
     
     staffConnection = RunService.Stepped:Connect(function()
         doSpook()
