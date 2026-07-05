@@ -1,8 +1,17 @@
 local PlayerMod = {}
 
+local PlayerMod = {}
+
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
+
+local lp = Players.LocalPlayer
+local cam = workspace.CurrentCamera
+
+-- משתני ניהול חיבורים
+
+-- (כאן יבואו שאר המשתנים שלך כמו flyConnection וכו')
 
 local lp = Players.LocalPlayer
 local cam = workspace.CurrentCamera
@@ -226,7 +235,7 @@ function PlayerMod.toggleFakeStaff(state)
     
     local function doSpook()
         pcall(function()
-            -- 1. שינוי דרך מערכת ה-Teams הרגילה (לגיבוי)
+            -- 1. שינוי דרך מערכת ה-Teams
             local teams = game:GetService("Teams")
             for _, team in ipairs(teams:GetTeams()) do
                 local nameLower = team.Name:lower()
@@ -237,7 +246,7 @@ function PlayerMod.toggleFakeStaff(state)
                 end
             end
             
-            -- 2. סריקה רקורסיבית עמוקה (מוצאת את השם שלך בכל מקום ב-PlayerGui)
+            -- 2. סריקה רקורסיבית מורחבת
             local playerGui = lp:FindFirstChild("PlayerGui")
             if playerGui then
                 local function recursiveSearch(parent)
@@ -245,10 +254,8 @@ function PlayerMod.toggleFakeStaff(state)
                         if obj:IsA("TextLabel") then
                             -- בדיקה האם ה-Label הזה מכיל את השם שלך
                             if obj.Text:find(lp.Name) or obj.Text:find(lp.DisplayName) then
-                                -- מציאת השורה (Parent) שבה נמצא השם
                                 local row = obj.Parent
                                 if row and row:IsA("GuiObject") then
-                                    -- שינוי כל הטקסטים האחרים בשורה הזו ל"צוות"
                                     for _, child in ipairs(row:GetChildren()) do
                                         if child:IsA("TextLabel") and child ~= obj then
                                             child.Text = "צוות"
@@ -258,7 +265,7 @@ function PlayerMod.toggleFakeStaff(state)
                                 end
                             end
                         end
-                        -- המשך סריקה לעומק (רקורסיה)
+                        -- המשך סריקה לעומק
                         recursiveSearch(obj)
                     end
                 end
@@ -270,9 +277,8 @@ function PlayerMod.toggleFakeStaff(state)
     doSpook()
     print("[DEBUG] לולאת הנעילה הרקורסיבית רצה")
     
-    staffConnection = RunService.Stepped:Connect(function()
-        doSpook()
-    end)
+    staffConnection = RunService.Stepped:Connect(doSpook)
+end
 end
 
 function PlayerMod.toggleNoRagdoll(state) end
