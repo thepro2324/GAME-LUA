@@ -12,8 +12,6 @@ local bodyVelocity = nil
 local bodyGyro = nil
 local noclipConnection = nil
 local infJumpConnection = nil
-local autoResetConnection = nil
-local staffConnection = nil
 
 shared.walkSpeedValue = shared.walkSpeedValue or 16
 shared.jumpPowerValue = shared.jumpPowerValue or 50
@@ -40,7 +38,7 @@ function PlayerMod.updateJump(v)
     end
 end
 
--- פונקציית יצירת נשק
+-- פונקציית הנשק
 function PlayerMod.toggleCustomWeapon(state)
     local toolName = "CustomWeapon"
     local backpack = lp.Backpack
@@ -48,6 +46,7 @@ function PlayerMod.toggleCustomWeapon(state)
 
     local existing = backpack:FindFirstChild(toolName) or (character and character:FindFirstChild(toolName))
     if existing then existing:Destroy() end
+    
     if not state then return end
 
     local tool = Instance.new("Tool")
@@ -172,7 +171,5 @@ function PlayerMod.toggleInvisible(state)
     end
 end
 
-function PlayerMod.toggleNoRagdoll(state) end
-function PlayerMod.toggleAutoHeal(state) end
-
+-- בסיום הקובץ חייב להיות return
 return PlayerMod
