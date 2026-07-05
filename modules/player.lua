@@ -56,14 +56,14 @@ function PlayerMod.toggleCustomWeapon(state)
     tool.Name = toolName
     tool.Parent = backpack
 
-    -- יצירת החלק המרכזי (Handle)
+    -- יצירת ה-Handle
     local handle = Instance.new("Part")
     handle.Name = "Handle"
     handle.Size = Vector3.new(1, 4, 1)
     handle.BrickColor = BrickColor.new("Really red")
     handle.Parent = tool
 
-    -- יצירת 4 חלקים נוספים וחיבורם
+    -- יצירת 4 חלקים נוספים
     for i = 1, 4 do
         local part = Instance.new("Part")
         part.Size = Vector3.new(0.5, 0.5, 0.5)
@@ -78,7 +78,7 @@ function PlayerMod.toggleCustomWeapon(state)
     end
 end
 
--- שאר הפונקציות המקוריות
+-- פונקציות נוספות
 function PlayerMod.toggleInfiniteZoom(state)
     pcall(function()
         local camera = workspace.CurrentCamera or workspace:FindFirstChildOfClass("Camera")
@@ -98,7 +98,6 @@ function PlayerMod.toggleFly(state)
     if flyConnection then flyConnection:Disconnect() flyConnection = nil end
     if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
     if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
-    
     if not state then 
         local char = lp.Character
         if char then
@@ -107,44 +106,30 @@ function PlayerMod.toggleFly(state)
         end
         return 
     end
-    
     local char = lp.Character or lp.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart")
     local hum = char:WaitForChild("Humanoid")
     hum.PlatformStand = true
-    
     bodyVelocity = Instance.new("BodyVelocity")
     bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
     bodyVelocity.Velocity = Vector3.new(0, 0, 0)
     bodyVelocity.Parent = hrp
-    
     bodyGyro = Instance.new("BodyGyro")
     bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
     bodyGyro.CFrame = hrp.CFrame
     bodyGyro.Parent = hrp
-    
     flyConnection = RunService.RenderStepped:Connect(function()
         if not hrp or not bodyVelocity or not bodyVelocity.Parent then return end
         local lookVector = cam.CFrame.LookVector
-        local rightVector = cam.CFrame.RightVector
         local forward = Vector3.new(lookVector.X, 0, lookVector.Z).Unit
-        local side = Vector3.new(rightVector.X, 0, rightVector.Z).Unit
+        local side = Vector3.new(cam.CFrame.RightVector.X, 0, cam.CFrame.RightVector.Z).Unit
         local moveDir = Vector3.new(0, 0, 0)
-        
         if UIS:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + forward end
         if UIS:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - forward end
         if UIS:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + side end
         if UIS:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - side end
-        if UIS:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
-        if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir = moveDir - Vector3.new(0, 1, 0) end
-        
         bodyGyro.CFrame = CFrame.new(hrp.Position, hrp.Position + Vector3.new(lookVector.X, 0, lookVector.Z))
-        local speed = shared.flySpeed or 100
-        if moveDir.Magnitude > 0 then
-            bodyVelocity.Velocity = moveDir.Unit * speed
-        else
-            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        end
+        bodyVelocity.Velocity = moveDir.Magnitude > 0 and (moveDir.Unit * (shared.flySpeed or 100)) or Vector3.new(0, 0, 0)
     end)
 end
 
