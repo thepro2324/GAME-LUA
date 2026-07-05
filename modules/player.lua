@@ -18,6 +18,7 @@ local staffConnection = nil
 shared.walkSpeedValue = shared.walkSpeedValue or 16
 shared.jumpPowerValue = shared.jumpPowerValue or 50
 
+-- פונקציות בסיסיות
 function PlayerMod.updateSpeed(v)
     shared.walkSpeedValue = v
     local char = lp.Character
@@ -39,53 +40,59 @@ function PlayerMod.updateJump(v)
     end
 end
 
-function PlayerMod.updateHipHeight(v)
-    local char = lp.Character
-    if char then
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum then hum.HipHeight = v end
+-- פונקציית יצירת נשק מ-5 חלקים
+function PlayerMod.toggleCustomWeapon(state)
+    local toolName = "CustomWeapon"
+    local backpack = lp.Backpack
+    local character = lp.Character
+
+    -- ניקוי נשק קיים
+    local existing = backpack:FindFirstChild(toolName) or (character and character:FindFirstChild(toolName))
+    if existing then existing:Destroy() end
+    if not state then return end
+
+    -- יצירת ה-Tool
+    local tool = Instance.new("Tool")
+    tool.Name = toolName
+    tool.Parent = backpack
+
+    -- יצירת החלק המרכזי (Handle)
+    local handle = Instance.new("Part")
+    handle.Name = "Handle"
+    handle.Size = Vector3.new(1, 4, 1)
+    handle.BrickColor = BrickColor.new("Really red")
+    handle.Parent = tool
+
+    -- יצירת 4 חלקים נוספים וחיבורם
+    for i = 1, 4 do
+        local part = Instance.new("Part")
+        part.Size = Vector3.new(0.5, 0.5, 0.5)
+        part.BrickColor = BrickColor.new("Black")
+        part.Position = handle.Position + Vector3.new(0, i * 0.8, 0)
+        part.Parent = tool
+        
+        local weld = Instance.new("WeldConstraint")
+        weld.Part0 = handle
+        weld.Part1 = part
+        weld.Parent = handle
     end
 end
 
+-- שאר הפונקציות המקוריות
 function PlayerMod.toggleInfiniteZoom(state)
     pcall(function()
         local camera = workspace.CurrentCamera or workspace:FindFirstChildOfClass("Camera")
         if state then
             lp.CameraMaxZoomDistance = math.huge
             lp.CameraMinZoomDistance = 0
-            if camera then
-                camera.MaxCameraZoomDistance = math.huge
-                camera.MinCameraZoomDistance = 0
-            end
+            if camera then camera.MaxCameraZoomDistance = math.huge camera.MinCameraZoomDistance = 0 end
         else
             lp.CameraMaxZoomDistance = 128
             lp.CameraMinZoomDistance = 0.5
-            if camera then
-                camera.MaxCameraZoomDistance = 128
-                camera.MinCameraZoomDistance = 0.5
-            end
+            if camera then camera.MaxCameraZoomDistance = 128 camera.MinCameraZoomDistance = 0.5 end
         end
     end)
 end
-
-lp.CharacterAdded:Connect(function(char)
-    local hum = char:WaitForChild("Humanoid")
-    task.wait(0.1)
-    if shared.walkSpeedValue then hum.WalkSpeed = shared.walkSpeedValue end
-    if shared.jumpPowerValue then 
-        hum.UseJumpPower = true
-        hum.JumpPower = shared.jumpPowerValue 
-    end
-    
-    if shared.infiniteZoomActive then
-        PlayerMod.toggleInfiniteZoom(true)
-    end
-    
-    if shared.isFlying then
-        task.wait(0.5)
-        PlayerMod.toggleFly(true)
-    end
-end)
 
 function PlayerMod.toggleFly(state)
     if flyConnection then flyConnection:Disconnect() flyConnection = nil end
@@ -104,7 +111,6 @@ function PlayerMod.toggleFly(state)
     local char = lp.Character or lp.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart")
     local hum = char:WaitForChild("Humanoid")
-    
     hum.PlatformStand = true
     
     bodyVelocity = Instance.new("BodyVelocity")
@@ -142,19 +148,6 @@ function PlayerMod.toggleFly(state)
     end)
 end
 
-function PlayerMod.toggleInfJump(state)
-    if infJumpConnection then infJumpConnection:Disconnect() infJumpConnection = nil end
-    if state then
-        infJumpConnection = UIS.JumpRequest:Connect(function()
-            local char = lp.Character
-            if char then
-                local hum = char:FindFirstChildOfClass("Humanoid")
-                if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
-            end
-        end)
-    end
-end
-
 function PlayerMod.toggleNoclip(state)
     if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
     if state then
@@ -165,27 +158,6 @@ function PlayerMod.toggleNoclip(state)
                     if part:IsA("BasePart") then part.CanCollide = false end
                 end
             end
-        end)
-    end
-end
-
-function PlayerMod.toggleAutoReset(state)
-    if autoResetConnection then autoResetConnection:Disconnect() autoResetConnection = nil end
-    if state then
-        local char = lp.Character or lp.CharacterAdded:Wait()
-        local hum = char:WaitForChild("Humanoid")
-        autoResetConnection = hum.HealthChanged:Connect(function(health)
-            if health > 0 and health <= 15 then hum.Health = 0 end
-        end)
-    end
-end
-
-function PlayerMod.toggleAntiAFK(state)
-    if state then
-        local virtualUser = game:GetService("VirtualUser")
-        lp.Idled:Connect(function()
-            virtualUser:CaptureController()
-            virtualUser:ClickButton2(Vector2.new(0,0))
         end)
     end
 end
@@ -211,41 +183,5 @@ function PlayerMod.toggleInvisible(state)
         end
     end
 end
-
--- ==================== פונקציית FakeStaff המעודכנת והממוקדת ====================
--- פונקציה להפעלת/כיבוי נשק
--- toolName: השם של הנשק כפי שהוא מופיע ב-ReplicatedStorage
-function PlayerMod.toggleWeapon(state, toolName)
-    local replicatedStorage = game:GetService("ReplicatedStorage")
-    local backpack = lp.Backpack
-    local character = lp.Character
-
-    if state then
-        -- מצב מופעל: נותן את הנשק
-        local tool = replicatedStorage:FindFirstChild(toolName)
-        if tool then
-            local clone = tool:Clone()
-            clone.Parent = backpack
-        end
-    else
-        -- מצב כבוי: מסיר את הנשק
-        -- מסיר מהתיק
-        for _, item in pairs(backpack:GetChildren()) do
-            if item.Name == toolName then item:Destroy() end
-        end
-        -- מסיר מהיד (אם הוא כבר מצויד)
-        if character and character:FindFirstChild(toolName) then
-            character[toolName]:Destroy()
-        end
-    end
-end
-    
-    staffConnection = RunService.Stepped:Connect(function()
-        doSpook()
-    end)
-end
-
-function PlayerMod.toggleNoRagdoll(state) end
-function PlayerMod.toggleAutoHeal(state) end
 
 return PlayerMod
