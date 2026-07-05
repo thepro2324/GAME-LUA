@@ -38,16 +38,21 @@ function PlayerMod.updateJump(v)
     end
 end
 
--- פונקציית קפיצות אינסופיות (חדש!)
+-- גרסה משופרת ומדויקת יותר
 function PlayerMod.toggleInfiniteJump(state)
-    if infJumpConnection then infJumpConnection:Disconnect() infJumpConnection = nil end
+    if infJumpConnection then 
+        infJumpConnection:Disconnect() 
+        infJumpConnection = nil 
+    end
+    
     if state then
         infJumpConnection = UIS.JumpRequest:Connect(function()
             local char = lp.Character
             if char then
                 local hum = char:FindFirstChildOfClass("Humanoid")
-                if hum then
-                    hum:ChangeState(Enum.HumanoidStateType.Jumping)
+                -- נוודא שהדמות לא ב-PlatformStand (כי אז אי אפשר לקפוץ)
+                if hum and hum.PlatformStand == false then
+                    hum.Jump = true -- זו הדרך הכי "נקייה" ברובלוקס לגרום לקפיצה
                 end
             end
         end)
