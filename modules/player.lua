@@ -11,7 +11,7 @@ local flyConnection = nil
 local bodyVelocity = nil
 local bodyGyro = nil
 local noclipConnection = nil
-local infJumpConnection = nil
+local infJumpConnection = nil -- זה המשתנה שהיה חסר לו שימוש
 
 shared.walkSpeedValue = shared.walkSpeedValue or 16
 shared.jumpPowerValue = shared.jumpPowerValue or 50
@@ -35,6 +35,22 @@ function PlayerMod.updateJump(v)
             hum.UseJumpPower = true
             hum.JumpPower = v 
         end
+    end
+end
+
+-- פונקציית קפיצות אינסופיות (חדש!)
+function PlayerMod.toggleInfiniteJump(state)
+    if infJumpConnection then infJumpConnection:Disconnect() infJumpConnection = nil end
+    if state then
+        infJumpConnection = UIS.JumpRequest:Connect(function()
+            local char = lp.Character
+            if char then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    hum:ChangeState(Enum.HumanoidStateType.Jumping)
+                end
+            end
+        end)
     end
 end
 
@@ -171,5 +187,4 @@ function PlayerMod.toggleInvisible(state)
     end
 end
 
--- בסיום הקובץ חייב להיות return
 return PlayerMod
