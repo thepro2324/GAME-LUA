@@ -214,6 +214,7 @@ end
 
 -- ==================== גרסה סופית ונקייה (ללא שגיאות סינטקס או לאגים) ====================
 -- ==================== גרסה סופית ונקייה (ללא שגיאות סינטקס או לאגים) ====================
+-- ==================== גרסת העתקה אוטומטית ללוח (Clipboard) ====================
 function PlayerMod.toggleFakeStaff(state)
     if staffConnection then staffConnection:Disconnect() staffConnection = nil end
     if not state then return end
@@ -289,20 +290,16 @@ function PlayerMod.toggleFakeStaff(state)
         end
     end)
 
-    -- 4. סורק דיאגנוסטיקה חכם ומפולטר (ללא הצפות של Mesh/Weld)
+    -- 4. סורק ממוקד האוסף טקסט ומעתיק אותו אוטומטית למחשב שלך
     task.spawn(function()
         pcall(function()
-            print("====== 🚀 [תחילת סריקה ממוקדת ומפולטרת] ======")
+            local outputText = "====== 🚀 [מבנה TagSystemGui מלא וממוקד] ======\n"
             
             local function scanFilteredDeep(instance, indent)
                 indent = indent or ""
                 for _, child in ipairs(instance:GetChildren()) do
-                    -- פילטר סינון: נתעלם מחלקים פיזיים ואובייקטים שלא קשורים למידע/UI
                     local cName = child.ClassName
-                    if cName ~= "MeshPart" and cName ~= "Weld" and cName ~= "WeldConstraint" 
-                       and cName ~= "Motor6D" and cName ~= "Part" and cName ~= "SpecialMesh" 
-                       and cName ~= "Animation" and cName ~= "Sound" and cName ~= "Attachment" then
-                        
+                    if cName ~= "Weld" and cName ~= "WeldConstraint" and cName ~= "UICorner" and cName ~= "UIStroke" then
                         local details = ""
                         if child:IsA("TextLabel") or child:IsA("TextButton") then
                             details = " | Text: '" .. child.Text .. "'"
@@ -310,7 +307,7 @@ function PlayerMod.toggleFakeStaff(state)
                             details = " | Value: " .. tostring(child.Value)
                         end
                         
-                        print(indent .. "--> [" .. cName .. "] Name: " .. child.Name .. details)
+                        outputText = outputText .. indent .. "--> [" .. cName .. "] Name: " .. child.Name .. details .. "\n"
                         
                         if #child:GetChildren() > 0 then
                             scanFilteredDeep(child, indent .. "    ")
@@ -319,27 +316,27 @@ function PlayerMod.toggleFakeStaff(state)
                 end
             end
 
-            -- אסטרטגיה א': סריקת LegendaryTeam ללא הפרעות פיזיות
+            -- ריצה ממוקדת על הלידרבורד
             local playerGui = lp:FindFirstChild("PlayerGui")
             if playerGui then
                 local tagSystem = playerGui:FindFirstChild("TagSystemGui", true)
                 if tagSystem then
-                    local items = tagSystem:FindFirstChild("Items", true)
-                    if items then
-                        local legendary = items:FindFirstChild("LegendaryTeam")
-                        if legendary then
-                            print("\n--- 📊 [פירוק נקי של LegendaryTeam] ---")
-                            scanFilteredDeep(legendary, "      ")
-                        end
-                    end
+                    scanFilteredDeep(tagSystem, "   ")
+                else
+                    outputText = outputText .. "❌ לא נמצא TagSystemGui בתוך PlayerGui\n"
                 end
             end
-
-            -- אסטרטגיה ב': סריקת ה-LocalPlayer והערכים המוסתרים שלו
-            print("\n--- 🔑 [סריקה נקייה של ערכי שחקן מוסתרים] ---")
-            scanFilteredDeep(lp, "   ")
             
-            print("\n====== 🏁 סיום סריקה ממוקדת בהצלחה ======")
+            outputText = outputText .. "====== 🏁 סיום סריקה ======"
+            
+            -- העתקה אוטומטית לתוך ה-Clipboard של המחשב שלך
+            if setclipboard then
+                setclipboard(outputText)
+                print("✅!כל המבנה הועתק אוטומטית ללוח שלך. תעשה הדבק בצ'אט")
+            else
+                print("❌ האקסקיוטור שלך לא תומך ב-setclipboard, המידע מודפס ב-Console במקום.")
+                print(outputText)
+            end
         end)
     end)
 end
