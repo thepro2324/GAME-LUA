@@ -1,37 +1,72 @@
--- הגדרות ראשוניות (Import ו-SafeCall)
+-- הגדרות GitHub (שנה לפרטים שלך)
 local GITHUB_USER = "thepro2324"
 local REPO_NAME   = "GAME-LUA"
+local BRANCH      = "main" -- או master
 
+-- פונקציית ייבוא (Import)
 local function import(path)
-    -- ... (הקוד של ה-import שלך נשאר אותו דבר) ...
+    local url = "https://raw.githubusercontent.com/"..GITHUB_USER.."/"..REPO_NAME.."/"..BRANCH.."/"..path
+    local success, result = pcall(function()
+        return loadstring(game:HttpGet(url))()
+    end)
+    if not success then
+        warn("❌ Error loading: " .. path .. "\n" .. tostring(result))
+        return nil
+    end
+    return result
 end
-local function safeCall(mod, funcName, ...) if mod and mod[funcName] then return mod[funcName](...) end end
 
--- טעינת רכיבי ממשק
+-- פונקציה לבטיחות הרצה
+local function safeCall(mod, funcName, ...) 
+    if mod and mod[funcName] then 
+        return mod[funcName](...) 
+    end 
+end
+
+-- 1. טעינת תשתית
 local Elements = import("ui/elements.lua")
-local Menu = import("ui/menu.lua")
+local Menu     = import("ui/menu.lua")
+
+if not Elements or not Menu then 
+    warn("Failed to load UI components!") 
+    return 
+end
+
+-- 2. אתחול הממשק
 local MenuInterface = Menu.init(Elements)
 
--- טעינת מודולים (כאן אנחנו מייבאים אותם)
-local HomeMod     = import("modules/home.lua")
-local PlayerMod   = import("modules/player.lua")
-local TargetMod   = import("modules/target.lua")
-local VisualsMod  = import("modules/visuals.lua")
-local WorldMod    = import("modules/world.lua")
-local TeleportMod = import("modules/teleport.lua")
-local SettingsMod = import("modules/settings.lua")
+-- 3. טעינת מודולים
+local Modules = {
+    HomeMod     = import("modules/home.lua"),
+    PlayerMod   = import("modules/player.lua"),
+    TargetMod   = import("modules/target.lua"),
+    VisualsMod  = import("modules/visuals.lua"),
+    WorldMod    = import("modules/world.lua"),
+    TeleportMod = import("modules/teleport.lua"),
+    SettingsMod = import("modules/settings.lua"),
+}
 
--- מערכת UIReferences ו-Localization (גלובלי או מועבר)
+-- 4. הגדרות לוקליזציה ורפרנסים
 local UIReferences = {}
-local Localization = { -- ... (הטבלה שלך כאן) ... }
+local Localization = { ["Title"] = "ori_dev_hub" }
 
--- הרצת הטאבים (החלק המרכזי שרצית)
-HomeMod.init(MenuInterface.createTab("Home", 1), Elements, UIReferences, Localization, safeCall)
-TargetMod.init(MenuInterface.createTab("Target", 2), Elements, UIReferences, Localization, safeCall)
-PlayerMod.init(MenuInterface.createTab("Player", 3), Elements, UIReferences, Localization, safeCall)
-VisualsMod.init(MenuInterface.createTab("Visuals", 4), Elements, UIReferences, Localization, safeCall)
-WorldMod.init(MenuInterface.createTab("World", 5), Elements, UIReferences, Localization, safeCall)
-TeleportMod.init(MenuInterface.createTab("Servers", 6), Elements, UIReferences, Localization, safeCall)
-SettingsMod.init(MenuInterface.createTab("Settings", 7), Elements, UIReferences, Localization, safeCall)
+-- 5. בניית הטאבים והרצה
+local tabConfig = {
+    {"Home", Modules.HomeMod},
+    {"Target", Modules.TargetMod},
+    {"Player", Modules.PlayerMod},
+    {"Visuals", Modules.VisualsMod},
+    {"World", Modules.WorldMod},
+    {"Servers", Modules.TeleportMod},
+    {"Settings", Modules.SettingsMod}
+}
 
-print("🚀 הכל נטען ועובד!")
+for i, data in ipairs(tabConfig) do
+    local tabName, mod = data[1], data[2]
+    if mod then
+        local tab = MenuInterface.createTab(tabName, i, Elements)
+        mod.init(tab, Elements, UIReferences, Localization, safeCall)
+    end
+end
+
+print("🚀 ori_dev_hub loaded successfully!")
