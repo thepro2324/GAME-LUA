@@ -1,17 +1,28 @@
 local function loadModule(path)
-    local success, content = pcall(function()
-        return game:HttpGet("https://raw.githubusercontent.com/thepro2324/GAME-LUA/main/" .. path)
-    end)
+    local url = "https://raw.githubusercontent.com/thepro2324/GAME-LUA/main/" .. path
+    print("🔍 מנסה לטעון את: " .. url) -- זה ידפיס לך בדיוק מה הוא מחפש
     
-    if not success then warn("❌ נכשל בטעינת הקובץ מהרשת") return nil end
+    local success, response = pcall(function() return game:HttpGet(url) end)
     
-    local func, err = loadstring(content)
-    if not func then warn("❌ שגיאת תחביר בקובץ: " .. tostring(err)) return nil end
-    
-    local mod = func()
-    if not mod then warn("❌ הקובץ לא החזיר טבלה (חסר return בקובץ?)") return nil end
-    
-    return mod
+    if not success then
+        warn("❌ שגיאת חיבור לשרת (GitHub)")
+        return nil
+    end
+
+    -- בדיקה חשובה: האם השרת החזיר שגיאת 404?
+    if response:find("404") or response == "404: Not Found" then
+        warn("❌ שגיאת 404: הקובץ לא נמצא בנתיב הזה ב-GitHub: " .. path)
+        return nil
+    end
+
+    -- עכשיו ננסה להריץ את הקוד
+    local func, err = loadstring(response)
+    if not func then
+        warn("❌ שגיאת תחביר (Syntax Error) בקובץ: " .. path .. "\n" .. tostring(err))
+        return nil
+    end
+
+    return func()
 end
 
 -- טעינת המודול
