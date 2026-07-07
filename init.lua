@@ -1,35 +1,35 @@
--- הגדרת נתוני שפה
-local Localization = {
-    HE = { Welcome = "ברוך הבא למערכת", Version = "v1.0", AntiAFK = "Anti-AFK", AutoReset = "Auto-Reset", HideUser = "הסתר", FPSUnlock = "FPS", PlayersOnline = "שחקנים: " }
-}
+-- הגדרות
+local GITHUB_BASE = "https://raw.githubusercontent.com/thepro2324/GAME-LUA/main/"
 
--- פונקציה לטעינה בטוחה
 local function loadModule(path)
-    local success, mod = pcall(function()
-        return loadstring(game:HttpGet("https://raw.githubusercontent.com/thepro2324/GAME-LUA/main/"..path))()
-    end)
-    if not success then warn("❌ FAILED TO LOAD: " .. path .. "\n" .. tostring(mod)) return nil end
+    local url = GITHUB_BASE .. path
+    
+    -- 1. ניסיון הורדה מהרשת
+    local success, response = pcall(function() return game:HttpGet(url) end)
+    if not success then
+        warn("❌ שגיאת רשת בטעינת: " .. path)
+        return nil
+    end
+    
+    -- 2. בדיקה האם הקובץ קיים (404)
+    if response == "404: Not Found" or response == "400: Invalid request" then
+        warn("❌ הקובץ לא נמצא ב-GitHub (404): " .. path)
+        return nil
+    end
+
+    -- 3. ניסיון להפוך את הטקסט לקוד (Loadstring)
+    local func, err = loadstring(response)
+    if not func then
+        warn("❌ שגיאת קוד (Syntax Error) בתוך הקובץ: " .. path .. "\n" .. tostring(err))
+        return nil
+    end
+
+    -- 4. הרצה
+    local mod = func()
+    if not mod then
+        warn("❌ המודול חזר כ-nil (אולי שכחת לעשות return בסוף הקובץ?): " .. path)
+        return nil
+    end
+    
     return mod
-end
-
--- טעינת המודולים
-local HomeMod = loadModule("modules/home.lua")
-
--- בדיקה: האם המודול נטען?
-if HomeMod then
-    -- קריאה לפונקציה עם כל 9 הפרמטרים בסדר מדויק
-    -- הוספתי "nil" במקומות שחסרים לך מודולים כרגע כדי לשמור על הסדר
-    HomeMod.init(
-        tab,            -- 1
-        Elements,       -- 2
-        UIReferences,   -- 3
-        Localization,   -- 4
-        updateLangFunc, -- 5
-        safeCall,       -- 6
-        nil,            -- 7 (PlayerMod)
-        nil,            -- 8 (VisualsMod)
-        nil             -- 9 (WorldMod)
-    )
-else
-    warn("HomeMod לא נטען, לכן לא הרצנו את ה-init")
 end
