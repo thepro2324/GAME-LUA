@@ -1,45 +1,41 @@
--- הגדרות יסוד
-local GITHUB_USER = "thepro2324"
-local REPO_NAME   = "GAME-LUA"
-
-local function import(path)
-    local success, result = pcall(function()
-        return loadstring(game:HttpGet("https://raw.githubusercontent.com/"..GITHUB_USER.."/"..REPO_NAME.."/main/"..path))()
-    end)
-    if not success then warn("❌ Failed to load: " .. path .. "\n" .. tostring(result)) return nil end
-    return result
-end
-
-local function safeCall(mod, funcName, ...) if mod and mod[funcName] then return mod[funcName](...) end end
-
--- טעינת UI
-local Elements = import("ui/elements.lua")
-local Menu = import("ui/menu.lua")
-local MenuInterface = Menu.init(Elements)
-
--- טעינת מודולים
-local HomeMod     = import("modules/home.lua")
-local TargetMod   = import("modules/target.lua")
--- (הוסף כאן את השאר)
-
--- הגדרות מערכת (כאן ה-Localization מוגדר כטבלה)
-local UIReferences = {}
+-- הגדרת Localization עם המבנה שהמודול מצפה לו
 local Localization = {
-    Welcome = "ברוך הבא ל-Private Hub",
-    Settings = "הגדרות המערכת"
+    HE = {
+        Welcome = "ברוך הבא למערכת",
+        Version = "גרסה 1.0",
+        AntiAFK = "Anti-AFK",
+        AutoReset = "Auto-Reset",
+        HideUser = "הסתר שם",
+        FPSUnlock = "FPS Unlock",
+        PlayersOnline = "שחקנים מחוברים: "
+    },
+    EN = {
+        Welcome = "Welcome to the Hub",
+        Version = "Version 1.0",
+        AntiAFK = "Anti-AFK",
+        AutoReset = "Auto-Reset",
+        HideUser = "Hide Name",
+        FPSUnlock = "FPS Unlock",
+        PlayersOnline = "Players Online: "
+    }
 }
 
--- מערכת הרצת הטאבים (הגנה על הארגומנטים)
-local function loadTab(name, order, mod)
-    if not mod then warn("Module " .. name .. " not found!") return end
-    local tab = MenuInterface.createTab(name, order, Elements)
-    
-    -- העברת 5 הפרמטרים במדויק:
-    mod.init(tab, Elements, UIReferences, Localization, safeCall)
+-- פונקציית עדכון שפה (נדרשת עבור ה-updateLangFunc)
+local function updateLangFunc(lang)
+    print("Language changed to: " .. lang)
+    -- כאן תוסיף לוגיקה לעדכון ה-TextLabels ב-UIReferences
 end
 
--- הרצה
-loadTab("Home", 1, HomeMod)
-loadTab("Target", 2, TargetMod)
-
-print("🚀 המערכת נטענה בהצלחה!")
+-- קריאה למודול (חייבים 9 ארגומנטים!)
+-- שים לב לסדר הארגומנטים:
+HomeMod.init(
+    MenuInterface.createTab("Home", 1, Elements), 
+    Elements, 
+    UIReferences, 
+    Localization, 
+    updateLangFunc, 
+    safeCall, 
+    PlayerMod, 
+    VisualsMod, 
+    WorldMod
+)
