@@ -1,30 +1,26 @@
-lo-- הגדרת פונקציית הטעינה (נשארת כפי שהייתה)
-local function loadModule(path)
-    local url = "https://raw.githubusercontent.com/thepro2324/GAME-LUA/main/" .. path
-    local success, response = pcall(function() return game:HttpGet(url) end)
-    
-    if not success then return nil end
-    if response:find("404") then return nil end
-    
-    local func, err = loadstring(response)
-    if not func then return nil end
-    
-    return func()
+-- הכתובת הישירה של הקובץ (תוודא שזה ה-RAW מגיטהאב)
+local url = "https://raw.githubusercontent.com/thepro2324/GAME-LUA/main/ui/menu.lua"
+
+local success, response = pcall(function() 
+    return game:HttpGet(url) 
+end)
+
+if not success then
+    return warn("Failed to fetch script from GitHub")
 end
 
--- טעינת המודול
-local MenuModule = loadModule("ui/menu.lua")
+local func = loadstring(response)
+if not func then
+    return warn("Loadstring failed - syntax error in your file")
+end
 
--- בדיקה קריטית: האם הוא באמת נטען?
+-- הרצת המודול
+local MenuModule = func()
+
+-- בדיקה אם המודול קיים לפני הרצה
 if MenuModule and type(MenuModule) == "table" then
-    print("✅ MenuModule נטען בהצלחה!")
-    
     local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-    
-    -- הפעלה
-    pcall(function()
-        MenuModule.init(playerGui) 
-    end)
+    MenuModule.init(playerGui)
 else
-    warn("🚨 שגיאה: MenuModule לא נטען. בדוק שהקובץ ב-GitHub מסתיים ב-return!")
+    warn("MenuModule is nil! Check if you put 'return Menu' at the end of the file in GitHub.")
 end
