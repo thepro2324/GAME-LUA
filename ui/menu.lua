@@ -1,9 +1,7 @@
--- הגדרת הטבלה של המודול
 local Menu = {}
 
--- פונקציית ה-init
 function Menu.init(parent)
-    -- ניקוי קודם כדי למנוע כפילויות
+    -- ניקוי GUI ישן אם קיים
     if parent:FindFirstChild("ModernMenuUI") then
         parent:FindFirstChild("ModernMenuUI"):Destroy()
     end
@@ -26,9 +24,9 @@ function Menu.init(parent)
     local stroke = Instance.new("UIStroke", frame)
     stroke.Thickness = 2
     stroke.Color = Color3.fromRGB(50, 50, 50)
-
-    print("✅ ה-UI נוצר!")
+    
+    print("UI Created Successfully")
 end
 
--- !!! השורה הזאת חייבת להיות בשורה האחרונה של הקובץ !!!
+-- השורה הזאת היא הכי חשובה!
 return Menu
