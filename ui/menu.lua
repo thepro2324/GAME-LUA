@@ -13,7 +13,7 @@ screenGui.Name = "ModernMenu"
 screenGui.Parent = playerGui
 
 local frame = Instance.new("Frame", screenGui)
-frame.Size = UDim2.new(0, 300, 0, 400)
+frame.Size = UDim2.new(0, 600, 0, 400)
 frame.Position = UDim2.new(0.5, -150, 0.5, -200)
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BorderSizePixel = 0
