@@ -25,7 +25,7 @@ local function loadModule(path)
 end
 
 -- 2. עכשיו אתה יכול להשתמש בה כדי לטעון את המודולים שלך
-local MenuModule = loadModule(""ui/menu.lua"") 
+local MenuModule = loadModule("ui/menu.lua")
 
 -- 3. רק אם הטעינה הצליחה, תריץ את ה-init
 if MenuModule then
