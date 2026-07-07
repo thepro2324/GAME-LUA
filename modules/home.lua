@@ -31,14 +31,16 @@ function HomeMod.init(tab, Elements, UIReferences, Localization, updateLangFunc,
 
     UIReferences.welcomeLabel = Instance.new("TextLabel", textContainer)
     UIReferences.welcomeLabel.Size = UDim2.new(1, 0, 0.5, 0)
-    UIReferences.welcomeLabel.Text = Localization.HE.Welcome
+    UIReferences.welcomeLabel.Text = Localization.HE.Welcome -- ניתן לשנות לדינמי בהמשך
     UIReferences.welcomeLabel.BackgroundTransparency = 1
+    UIReferences.welcomeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 
     UIReferences.versionLabel = Instance.new("TextLabel", textContainer)
     UIReferences.versionLabel.Size = UDim2.new(1, 0, 0.5, 0)
     UIReferences.versionLabel.Position = UDim2.new(0, 0, 0.5, 5)
     UIReferences.versionLabel.Text = Localization.HE.Version
     UIReferences.versionLabel.BackgroundTransparency = 1
+    UIReferences.versionLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
 
     -- --- גריד כפתורים ---
     local hGrid = Instance.new("Frame", tab)
@@ -50,7 +52,8 @@ function HomeMod.init(tab, Elements, UIReferences, Localization, updateLangFunc,
     gh.CellSize = UDim2.new(0.48, 0, 0, 32) 
     gh.CellPadding = UDim2.new(0, 8, 0, 8)
 
-    UIReferences.btnAntiAFK = Elements.createToggleButton(hGrid, Localization.HE.AntiAFK, true, function(s) safeCall(PlayerMod, "toggleAntiAFK", s) end)
+    -- יצירת הכפתורים
+    UIReferences.btnAntiAFK = Elements.createToggleButton(hGrid, Localization.HE.AntiAFK, false, function(s) safeCall(PlayerMod, "toggleAntiAFK", s) end)
     UIReferences.btnAutoReset = Elements.createToggleButton(hGrid, Localization.HE.AutoReset, false, function(s) safeCall(PlayerMod, "toggleAutoReset", s) end)
     UIReferences.btnHideUser = Elements.createToggleButton(hGrid, Localization.HE.HideUser, false, function(s) safeCall(VisualsMod, "toggleHideName", s) end)
     UIReferences.btnFPS = Elements.createToggleButton(hGrid, Localization.HE.FPSUnlock, false, function(s) safeCall(WorldMod, "toggleFPS", s) end)
@@ -63,14 +66,13 @@ function HomeMod.init(tab, Elements, UIReferences, Localization, updateLangFunc,
     UIReferences.playerCountLabel.TextColor3 = Color3.fromRGB(30, 215, 96)
     UIReferences.playerCountLabel.Font = Enum.Font.SourceSansBold
     
+    -- לולאה בטוחה (עוצרת אם הטקסט נמחק)
     task.spawn(function()
-        while task.wait(2) do
-            if UIReferences.playerCountLabel then
-                local count = #game:GetService("Players"):GetPlayers()
-                local max = game:GetService("Players").MaxPlayers
-                -- נשתמש ב-currentLanguage שמגיע מה-Localization
-                UIReferences.playerCountLabel.Text = Localization.HE.PlayersOnline .. count .. "/" .. max
-            end
+        while UIReferences.playerCountLabel and UIReferences.playerCountLabel.Parent do
+            local count = #game:GetService("Players"):GetPlayers()
+            local max = game:GetService("Players").MaxPlayers
+            UIReferences.playerCountLabel.Text = Localization.HE.PlayersOnline .. count .. "/" .. max
+            task.wait(2)
         end
     end)
 end
