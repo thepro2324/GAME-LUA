@@ -1,9 +1,7 @@
 local Menu = {}
 
 function Menu.init(parent)
-    print("🎨 המודול יוצר את ה-UI...")
-
-    -- מחיקת ישן אם קיים
+    -- ניקוי GUI ישן אם קיים
     if parent:FindFirstChild("ModernMenu") then
         parent:FindFirstChild("ModernMenu"):Destroy()
     end
@@ -16,7 +14,7 @@ function Menu.init(parent)
     frame.Position = UDim2.new(0.5, -150, 0.5, -200)
     frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     frame.BorderSizePixel = 0
-
+    
     local corner = Instance.new("UICorner", frame)
     corner.CornerRadius = UDim.new(0, 15)
 
@@ -24,8 +22,8 @@ function Menu.init(parent)
     stroke.Color = Color3.fromRGB(100, 100, 100)
     stroke.Thickness = 2
     
-    print("✅ ה-UI נוצר!")
+    print("Menu module initialized successfully")
 end
 
--- !!! השורה הזאת קריטית - בלעדיה MenuModule יהיה nil !!!
+-- השורה הזאת מחייבת את ה-Executor לקבל את הטבלה
 return Menu
