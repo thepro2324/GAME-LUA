@@ -1,40 +1,34 @@
-function Menu.init(parent, Elements, UIReferences, Localization, updateLangFunc, safeCall, PlayerMod, VisualsMod, WorldMod)
-    print("🎨 מעצב את ה-UI...")
+-- הגדרת הטבלה של המודול
+local Menu = {}
 
-    -- 1. יצירת ה-ScreenGui (אם הוא לא קיים)
+-- פונקציית ה-init
+function Menu.init(parent)
+    -- ניקוי קודם כדי למנוע כפילויות
+    if parent:FindFirstChild("ModernMenuUI") then
+        parent:FindFirstChild("ModernMenuUI"):Destroy()
+    end
+
     local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "MyModernMenu"
+    screenGui.Name = "ModernMenuUI"
     screenGui.Parent = parent
 
-    -- 2. יצירת ה-Frame עם עיצוב מודרני
     local frame = Instance.new("Frame")
     frame.Name = "MainFrame"
-    frame.Size = UDim2.new(0, 350, 0, 450) -- גודל נוח
-    frame.Position = UDim2.new(0.5, -175, 0.5, -225) -- ממורכז
-    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- אפור כהה יוקרתי
+    frame.Size = UDim2.new(0, 350, 0, 450)
+    frame.Position = UDim2.new(0.5, -175, 0.5, -225)
+    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     frame.BorderSizePixel = 0
     frame.Parent = screenGui
 
-    -- 3. הוספת פינות מעוגלות (UICorner)
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 15) -- עיגול יפה בפינות
-    corner.Parent = frame
+    local corner = Instance.new("UICorner", frame)
+    corner.CornerRadius = UDim.new(0, 15)
 
-    -- 4. הוספת מסגרת עדינה (UIStroke)
-    local stroke = Instance.new("UIStroke")
+    local stroke = Instance.new("UIStroke", frame)
     stroke.Thickness = 2
-    stroke.Color = Color3.fromRGB(50, 50, 50) -- גוון בהיר יותר מהרקע
-    stroke.Parent = frame
+    stroke.Color = Color3.fromRGB(50, 50, 50)
 
-    -- 5. הוספת כותרת (TextLabel)
-    local title = Instance.new("TextLabel")
-    title.Text = "Welcome"
-    title.Size = UDim2.new(1, 0, 0, 50)
-    title.BackgroundTransparency = 1
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.Font = Enum.Font.GothamBold
-    title.TextSize = 24
-    title.Parent = frame
-
-    print("✨ ה-UI עוצב בהצלחה!")
+    print("✅ ה-UI נוצר!")
 end
+
+-- !!! השורה הזאת חייבת להיות בשורה האחרונה של הקובץ !!!
+return Menu
