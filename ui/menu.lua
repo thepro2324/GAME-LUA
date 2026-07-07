@@ -30,3 +30,6 @@ btn.MouseButton1Click:Connect(function()
 end)
 
 print("✅ UI טעון בהצלחה!")
+
+-- הנה השורה החשובה שפותרת את השגיאה:
+return true
