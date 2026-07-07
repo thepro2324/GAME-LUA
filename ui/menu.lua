@@ -1,3 +1,5 @@
+local module = {}
+
 -- ניקוי קודם
 local CoreGui = game:GetService("CoreGui")
 if CoreGui:FindFirstChild("MyMenu") then 
@@ -16,7 +18,7 @@ frame.Position = UDim2.new(0.5, -100, 0.5, -75)
 frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 Instance.new("UICorner", frame)
 
--- כפתור בדיקה
+-- כפתור
 local btn = Instance.new("TextButton", frame)
 btn.Size = UDim2.new(0.8, 0, 0, 40)
 btn.Position = UDim2.new(0.1, 0, 0.3, 0)
@@ -29,7 +31,7 @@ btn.MouseButton1Click:Connect(function()
     print("Kill Aura activated!")
 end)
 
-print("✅ UI טעון בהצלחה!")
+print("✅ UI Created Successfully!")
 
--- הנה השורה החשובה שפותרת את השגיאה:
-return true
+-- השורה הזו מעלימה את האזהרה:
+return module
