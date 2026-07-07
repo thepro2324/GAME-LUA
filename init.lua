@@ -1,4 +1,4 @@
--- 1. הגדרת פונקציית הטעינה (שים אותה כאן בהתחלה)
+-- 1. הגדרת פונקציית הטעינה
 local function loadModule(path)
     local url = "https://raw.githubusercontent.com/thepro2324/GAME-LUA/main/" .. path
     print("🔍 מנסה לטעון: " .. url)
@@ -24,15 +24,24 @@ local function loadModule(path)
     return func()
 end
 
--- 2. עכשיו אתה יכול להשתמש בה כדי לטעון את המודולים שלך
+-- 2. טעינת המודול
 local MenuModule = loadModule("ui/menu.lua")
 
--- 3. רק אם הטעינה הצליחה, תריץ את ה-init
+-- 3. הגדרת ה-tab (כאן השינוי!)
+-- תבדוק איפה ה-UI שלך נמצא ב-Explorer ותשנה את הנתיב בהתאם
+local tab = script.Parent -- אם הסקריפט נמצא בתוך ה-Frame, זה יעבוד. 
+
+-- 4. הרצת ה-init רק אם הכל מוכן
 if MenuModule then
     print("✅ MenuModule נטען בהצלחה!")
     
-    -- כאן תבצע את הקריאה ל-init עם כל הארגומנטים שלך
-    MenuModule.init(tab, Elements, UIReferences, Localization, updateLangFunc, safeCall, PlayerMod, VisualsMod, WorldMod)
+    -- בדיקת הגנה: האם tab קיים?
+    if tab then
+        print("🚀 מפעיל את התפריט על: " .. tab.Name)
+        MenuModule.init(tab, Elements, UIReferences, Localization, updateLangFunc, safeCall, PlayerMod, VisualsMod, WorldMod)
+    else
+        warn("🚨 המשתנה tab ריק (nil), לא ניתן להמשיך!")
+    end
 else
     warn("🚨 המודול לא נטען, לכן לא הרצנו את ה-init")
 end
