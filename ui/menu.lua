@@ -1,16 +1,10 @@
 local HomeMod = {}
 
 function HomeMod.init(tab, Elements, UIReferences, Localization, updateLangFunc, safeCall, PlayerMod, VisualsMod, WorldMod)
-    
-    -- הגנה: וודא ש-Localization ו-HE קיימים לפני השימוש
-    local langData = (Localization and Localization.HE) and Localization.HE or {
-        Welcome = "Welcome", 
-        Version = "V1", 
-        AntiAFK = "Anti-AFK", 
-        AutoReset = "Reset", 
-        HideUser = "Hide", 
-        FPSUnlock = "FPS", 
-        PlayersOnline = "Players: "
+    -- הגנת "אל-כשל": אם Localization הגיע ריק, נטען ערכי ברירת מחדל כדי למנוע קריסה
+    local langData = (Localization and Localization.HE) or {
+        Welcome = "Welcome", Version = "V1", AntiAFK = "Anti-AFK", 
+        AutoReset = "Reset", HideUser = "Hide", FPSUnlock = "FPS", PlayersOnline = "Players: "
     }
 
     -- --- טקסטים (Welcome & Version) ---
@@ -21,11 +15,11 @@ function HomeMod.init(tab, Elements, UIReferences, Localization, updateLangFunc,
 
     UIReferences.welcomeLabel = Instance.new("TextLabel", textContainer)
     UIReferences.welcomeLabel.Size = UDim2.new(1, 0, 0.5, 0)
-    -- שימוש ב-langData הבטוח
-    UIReferences.welcomeLabel.Text = langData.Welcome 
+    UIReferences.welcomeLabel.Text = langData.Welcome -- כאן כבר לא תהיה שגיאה
     UIReferences.welcomeLabel.BackgroundTransparency = 1
-    
-    -- ... המשך הקוד שלך ...
+    UIReferences.welcomeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+    -- ... שאר הקוד שלך (כפתורים וכו') ...
 end
 
 return HomeMod
