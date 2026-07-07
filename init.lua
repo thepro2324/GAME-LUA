@@ -1,35 +1,37 @@
--- הגדרות
-local GITHUB_BASE = "https://raw.githubusercontent.com/thepro2324/GAME-LUA/main/"
-
 local function loadModule(path)
-    local url = GITHUB_BASE .. path
+    local success, content = pcall(function()
+        return game:HttpGet("https://raw.githubusercontent.com/thepro2324/GAME-LUA/main/" .. path)
+    end)
     
-    -- 1. ניסיון הורדה מהרשת
-    local success, response = pcall(function() return game:HttpGet(url) end)
-    if not success then
-        warn("❌ שגיאת רשת בטעינת: " .. path)
-        return nil
-    end
+    if not success then warn("❌ נכשל בטעינת הקובץ מהרשת") return nil end
     
-    -- 2. בדיקה האם הקובץ קיים (404)
-    if response == "404: Not Found" or response == "400: Invalid request" then
-        warn("❌ הקובץ לא נמצא ב-GitHub (404): " .. path)
-        return nil
-    end
-
-    -- 3. ניסיון להפוך את הטקסט לקוד (Loadstring)
-    local func, err = loadstring(response)
-    if not func then
-        warn("❌ שגיאת קוד (Syntax Error) בתוך הקובץ: " .. path .. "\n" .. tostring(err))
-        return nil
-    end
-
-    -- 4. הרצה
+    local func, err = loadstring(content)
+    if not func then warn("❌ שגיאת תחביר בקובץ: " .. tostring(err)) return nil end
+    
     local mod = func()
-    if not mod then
-        warn("❌ המודול חזר כ-nil (אולי שכחת לעשות return בסוף הקובץ?): " .. path)
-        return nil
-    end
+    if not mod then warn("❌ הקובץ לא החזיר טבלה (חסר return בקובץ?)") return nil end
     
     return mod
+end
+
+-- טעינת המודול
+local MenuModule = loadModule("menu.lua") -- משתמשים בשם הקובץ הנכון
+
+if MenuModule then
+    print("✅ Menu נטען בהצלחה")
+    
+    -- קריאה לפונקציה עם כל הפרמטרים
+    MenuModule.init(
+        tab, 
+        Elements, 
+        UIReferences, 
+        Localization, 
+        updateLangFunc, 
+        safeCall, 
+        PlayerMod, 
+        VisualsMod, 
+        WorldMod
+    )
+else
+    warn("🚨 MenuModule הוא nil, לכן לא ניתן להריץ את ה-init")
 end
