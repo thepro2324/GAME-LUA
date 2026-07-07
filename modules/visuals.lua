@@ -2,25 +2,24 @@ local VisualsMod = {}
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
-local playerObj = Players.LocalPlayer
+local lp = Players.LocalPlayer
 
-_G.ESP_Enabled = false
-_G.ESP_Box = false
-_G.ESP_Names = false
-
--- משתנה לשמירת החיבור של הלולאה
+-- משתנים מקומיים (במקום _G)
+local espEnabled = false
+local espBox = false
+local espNames = false
 local espConnection = nil
 
--- הפונקציה שמעדכנת את ה-ESP לכל השחקנים
+-- לוגיקה פנימית של עדכון ה-ESP
 local function updateESP()
-    if not _G.ESP_Enabled then return end
+    if not espEnabled then return end
 
     for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= playerObj and p.Character then
+        if p ~= lp and p.Character then
             local char = p.Character
             local espFolder = char:FindFirstChild("ori_esp")
 
-            -- אם ה-ESP לא קיים, ניצור אותו
+            -- יצירת תיקייה אם לא קיימת
             if not espFolder then
                 espFolder = Instance.new("Folder", char)
                 espFolder.Name = "ori_esp"
@@ -28,7 +27,7 @@ local function updateESP()
 
             -- טיפול בתיבות (Highlight)
             local highlight = espFolder:FindFirstChild("Box")
-            if _G.ESP_Box then
+            if espBox then
                 if not highlight then
                     highlight = Instance.new("Highlight", espFolder)
                     highlight.Name = "Box"
@@ -42,7 +41,7 @@ local function updateESP()
 
             -- טיפול בשמות (BillboardGui)
             local billboard = espFolder:FindFirstChild("NameTag")
-            if _G.ESP_Names and char:FindFirstChild("Head") then
+            if espNames and char:FindFirstChild("Head") then
                 if not billboard then
                     billboard = Instance.new("BillboardGui", espFolder)
                     billboard.Name = "NameTag"
@@ -66,44 +65,37 @@ local function updateESP()
     end
 end
 
--- הפעלה/כיבוי של ה-Loop
+-- פונקציות Toggle
 function VisualsMod.toggleMasterESP(state)
-    _G.ESP_Enabled = state
-    
+    espEnabled = state
     if state then
-        -- אם מפעילים, נתחיל את הלולאה
-        if not espConnection then
-            espConnection = RunService.Heartbeat:Connect(updateESP)
-        end
+        if not espConnection then espConnection = RunService.Heartbeat:Connect(updateESP) end
     else
-        -- אם מכבים, נסגור את הלולאה וננקה הכל
-        if espConnection then
-            espConnection:Disconnect()
-            espConnection = nil
-        end
-        
-        -- מחיקת כל ה-ESP מהשחקנים
+        if espConnection then espConnection:Disconnect(); espConnection = nil end
         for _, p in ipairs(Players:GetPlayers()) do
-            if p.Character and p.Character:FindFirstChild("ori_esp") then
-                p.Character.ori_esp:Destroy()
-            end
+            if p.Character and p.Character:FindFirstChild("ori_esp") then p.Character.ori_esp:Destroy() end
         end
     end
 end
 
--- פונקציות להגדרות (רק משנות משתנים, הלולאה כבר רצה)
-function VisualsMod.toggleESPBox(state) _G.ESP_Box = state end
-function VisualsMod.toggleESPNames(state) _G.ESP_Names = state end
+function VisualsMod.toggleESPBox(state) espBox = state end
+function VisualsMod.toggleESPNames(state) espNames = state end
 
--- Fullbright (זה עובד כי זה משנה ערכים גלובליים, לא צריך לולאה)
 function VisualsMod.toggleFullbright(state)
-    if state then 
-        Lighting.Ambient = Color3.new(1, 1, 1) 
-        Lighting.GlobalShadows = false 
-    else 
-        Lighting.Ambient = Color3.fromRGB(120, 120, 120) 
-        Lighting.GlobalShadows = true 
-    end
+    Lighting.Ambient = state and Color3.new(1, 1, 1) or Color3.fromRGB(120, 120, 120)
+    Lighting.GlobalShadows = not state
+end
+
+-- בניית הממשק (UI)
+function VisualsMod.init(tab, Elements, UIReferences, Localization, safeCall)
+    local scroll = Instance.new("ScrollingFrame", tab)
+    scroll.Size = UDim2.new(1, 0, 1, 0); scroll.BackgroundTransparency = 1; scroll.CanvasSize = UDim2.new(0, 0, 0, 300)
+    Instance.new("UIListLayout", scroll).Padding = UDim.new(0, 10)
+
+    Elements.createToggleButton(scroll, "ESP Master", false, function(s) safeCall(VisualsMod, "toggleMasterESP", s) end)
+    Elements.createToggleButton(scroll, "ESP Boxes", false, function(s) safeCall(VisualsMod, "toggleESPBox", s) end)
+    Elements.createToggleButton(scroll, "ESP Names", false, function(s) safeCall(VisualsMod, "toggleESPNames", s) end)
+    Elements.createToggleButton(scroll, "Fullbright", false, function(s) safeCall(VisualsMod, "toggleFullbright", s) end)
 end
 
 return VisualsMod
