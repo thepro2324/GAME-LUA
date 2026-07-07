@@ -1,64 +1,44 @@
--- 1. הגדרת פונקציית הטעינה
+-- 1. פונקציית הטעינה (מה שכתבנו קודם)
 local function loadModule(path)
     local url = "https://raw.githubusercontent.com/thepro2324/GAME-LUA/main/" .. path
-    print("🔍 מנסה לטעון: " .. url)
-    
     local success, response = pcall(function() return game:HttpGet(url) end)
-    
-    if not success then
-        warn("❌ שגיאת חיבור לשרת: " .. url)
-        return nil
-    end
-
-    if response:find("404") or response == "404: Not Found" then
-        warn("❌ שגיאת 404: הקובץ לא קיים בכתובת הזו!")
-        return nil
-    end
-
-    local func, err = loadstring(response)
-    if not func then
-        warn("❌ שגיאת תחביר בקובץ: " .. path .. "\n" .. tostring(err))
-        return nil
-    end
-
-    return func()
+    if not success or response:find("404") then return nil end
+    local func = loadstring(response)
+    return func and func() or nil
 end
 
 -- 2. טעינת המודול
 local MenuModule = loadModule("ui/menu.lua")
 
--- 3. הגדרת המשתנים הדרושים (כדי שלא יקרוס על nil)
-local Elements = {} 
-local UIReferences = {}
-local Localization = {HE = {Welcome = "ברוך הבא"}} -- דוגמה למבנה, תוסיף את שלך
-local updateLangFunc = function() end
-local safeCall = function(f) f() end
-local PlayerMod = {}
-local VisualsMod = {}
-local WorldMod = {}
+-- 3. יצירה אוטומטית של ה-UI (בלי שתצטרך לדעת שמות!)
+local player = game.Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
--- !! כאן השינוי הכי חשוב !!
--- תבחר את השורה שמתאימה למיקום של ה-UI שלך ב-Explorer:
-local tab = game:GetService("CoreGui"):FindFirstChild("YourScreenGuiName") -- אפשרות א': נתיב מוחלט
--- local tab = script.Parent -- אפשרות ב': אם הסקריפט בתוך ה-Frame (תשתמש בזה רק אם זה עובד)
+-- מחפש/יוצר את ה-ScreenGui
+local screenGui = playerGui:FindFirstChild("MyAutoMenuGui") or Instance.new("ScreenGui", playerGui)
+screenGui.Name = "MyAutoMenuGui"
 
--- 4. הרצה עם בדיקה בטיחותית
-if MenuModule then
-    print("✅ MenuModule נטען בהצלחה!")
-    
-    if tab then
-        print("🚀 מפעיל את ה-init על: " .. tab.Name)
-        -- הרצה עם כל הפרמטרים
-        pcall(function()
-            MenuModule.init(tab, Elements, UIReferences, Localization, updateLangFunc, safeCall, PlayerMod, VisualsMod, WorldMod)
-        end)
-    else
-        warn("🚨 המשתנה tab הוא nil! הנה רשימת אובייקטים למציאת הנתיב הנכון:")
-        -- מדפיס לך מה קיים כדי שתוכל למצוא את השם הנכון
-        for _, child in pairs(game:GetService("CoreGui"):GetChildren()) do
-            print("מצאתי ב-CoreGui: " .. child.Name)
-        end
-    end
+-- מחפש/יוצר את ה-Frame (זה ה-tab שלך)
+local tab = screenGui:FindFirstChild("MainFrame")
+if not tab then
+    tab = Instance.new("Frame", screenGui)
+    tab.Name = "MainFrame"
+    tab.Size = UDim2.new(0, 300, 0, 400) -- גודל ברירת מחדל
+    tab.Position = UDim2.new(0.5, -150, 0.5, -200) -- מרכז המסך
+    tab.BackgroundColor3 = Color3.fromRGB(45, 45, 45) -- צבע רקע כדי שתראה אותו
+    print("✨ נוצר Frame חדש בשם MainFrame")
 else
-    warn("🚨 המודול לא נטען, לכן לא הרצנו את ה-init")
+    print("✅ ה-Frame קיים, משתמש בו.")
+end
+
+-- 4. הרצה עם כל המשתנים
+if MenuModule then
+    print("✅ MenuModule נטען!")
+    -- הגדרת משתני עזר (אם הם חסרים)
+    local Elements, UIReferences, Localization, updateLangFunc, safeCall, PlayerMod, VisualsMod, WorldMod = {}, {}, {}, function() end, function(f) f() end, {}, {}, {}
+    
+    -- הרצה
+    MenuModule.init(tab, Elements, UIReferences, Localization, updateLangFunc, safeCall, PlayerMod, VisualsMod, WorldMod)
+else
+    warn("🚨 המודול לא נטען")
 end
