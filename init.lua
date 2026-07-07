@@ -27,20 +27,37 @@ end
 -- 2. טעינת המודול
 local MenuModule = loadModule("ui/menu.lua")
 
--- 3. הגדרת ה-tab (כאן השינוי!)
--- תבדוק איפה ה-UI שלך נמצא ב-Explorer ותשנה את הנתיב בהתאם
-local tab = script.Parent -- אם הסקריפט נמצא בתוך ה-Frame, זה יעבוד. 
+-- 3. הגדרת המשתנים הדרושים (כדי שלא יקרוס על nil)
+local Elements = {} 
+local UIReferences = {}
+local Localization = {HE = {Welcome = "ברוך הבא"}} -- דוגמה למבנה, תוסיף את שלך
+local updateLangFunc = function() end
+local safeCall = function(f) f() end
+local PlayerMod = {}
+local VisualsMod = {}
+local WorldMod = {}
 
--- 4. הרצת ה-init רק אם הכל מוכן
+-- !! כאן השינוי הכי חשוב !!
+-- תבחר את השורה שמתאימה למיקום של ה-UI שלך ב-Explorer:
+local tab = game:GetService("CoreGui"):FindFirstChild("YourScreenGuiName") -- אפשרות א': נתיב מוחלט
+-- local tab = script.Parent -- אפשרות ב': אם הסקריפט בתוך ה-Frame (תשתמש בזה רק אם זה עובד)
+
+-- 4. הרצה עם בדיקה בטיחותית
 if MenuModule then
     print("✅ MenuModule נטען בהצלחה!")
     
-    -- בדיקת הגנה: האם tab קיים?
     if tab then
-        print("🚀 מפעיל את התפריט על: " .. tab.Name)
-        MenuModule.init(tab, Elements, UIReferences, Localization, updateLangFunc, safeCall, PlayerMod, VisualsMod, WorldMod)
+        print("🚀 מפעיל את ה-init על: " .. tab.Name)
+        -- הרצה עם כל הפרמטרים
+        pcall(function()
+            MenuModule.init(tab, Elements, UIReferences, Localization, updateLangFunc, safeCall, PlayerMod, VisualsMod, WorldMod)
+        end)
     else
-        warn("🚨 המשתנה tab ריק (nil), לא ניתן להמשיך!")
+        warn("🚨 המשתנה tab הוא nil! הנה רשימת אובייקטים למציאת הנתיב הנכון:")
+        -- מדפיס לך מה קיים כדי שתוכל למצוא את השם הנכון
+        for _, child in pairs(game:GetService("CoreGui"):GetChildren()) do
+            print("מצאתי ב-CoreGui: " .. child.Name)
+        end
     end
 else
     warn("🚨 המודול לא נטען, לכן לא הרצנו את ה-init")
