@@ -1,20 +1,16 @@
-local HomeMod = {}
+local Menu = {}
 
-function HomeMod.init(tab, Elements, UIReferences, Localization, updateLangFunc, safeCall, PlayerMod, VisualsMod, WorldMod)
-    -- הגנה: אם Localization לא הגיע, אנחנו מגדירים אותו כטבלה ריקה כדי לא לקרוס
-    if not Localization then 
-        warn("Localization is NIL! Using default.") 
-        Localization = { HE = { Welcome = "Default Welcome" } } 
-    end
-
-    -- הגנה על HE
-    local lang = Localization.HE or { Welcome = "Default Welcome" }
-
-    -- עכשיו הקוד שלך בטוח לשימוש
-    UIReferences.welcomeLabel = Instance.new("TextLabel", tab)
-    UIReferences.welcomeLabel.Text = lang.Welcome -- זה לא יקרוס יותר!
+-- וודא שהפונקציה שלך נראית ככה, מקבלת את כל הפרמטרים:
+function Menu.init(tab, Elements, UIReferences, Localization, updateLangFunc, safeCall, PlayerMod, VisualsMod, WorldMod)
+    -- הגנה מפני nil כדי למנוע את השגיאה של Welcome
+    local langData = (Localization and Localization.HE) or { Welcome = "Welcome" }
     
-    print("HomeMod initialized successfully")
+    -- הנה הקוד שלך...
+    -- דוגמה לשימוש בטקסט בטוח:
+    print(langData.Welcome) 
+    
+    -- ... שאר הקוד שלך
 end
 
-return HomeMod
+-- הכי חשוב: השורה הזו חייבת להיות בסוף הקובץ!
+return Menu
