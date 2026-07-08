@@ -1,5 +1,7 @@
 -- הגנה מפני הרצה כפולה
 local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+
 if CoreGui:FindFirstChild("MyMenu") then 
     CoreGui:FindFirstChild("MyMenu"):Destroy() 
 end
@@ -8,13 +10,42 @@ end
 local screen = Instance.new("ScreenGui", CoreGui)
 screen.Name = "MyMenu"
 
--- פריים ראשי (הוגדל מעט לגובה 380 כדי להכיל יותר קטגוריות)
+-- פריים ראשי
 local frame = Instance.new("Frame", screen)
 frame.Size = UDim2.new(0, 500, 0, 380)
 frame.Position = UDim2.new(0.5, -250, 0.5, -190)
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BorderSizePixel = 0
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+
+-- פונקציה להפיכת פריים לניתן לגרירה
+local function makeDraggable(gui)
+    local dragging, dragInput, dragStart, startPos
+    
+    gui.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = gui.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+            local delta = input.Position - dragStart
+            gui.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+-- הפעלת הגרירה על הפריים הראשי
+makeDraggable(frame)
 
 -- כותרת ה-Hub
 local title = Instance.new("TextLabel", frame)
