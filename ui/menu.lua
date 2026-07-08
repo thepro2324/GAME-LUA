@@ -10,10 +10,10 @@ end
 local screen = Instance.new("ScreenGui", CoreGui)
 screen.Name = "MyMenu"
 
--- פריים ראשי
+-- פריים ראשי (500x300)
 local frame = Instance.new("Frame", screen)
-frame.Size = UDim2.new(0, 500, 0, 380)
-frame.Position = UDim2.new(0.5, -250, 0.5, -190)
+frame.Size = UDim2.new(0, 500, 0, 300)
+frame.Position = UDim2.new(0.5, -250, 0.5, -150) -- מחושב למרכז לפי הגובה החדש
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BorderSizePixel = 0
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
@@ -65,22 +65,19 @@ local function createButton(name, pos)
     b.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     b.TextColor3 = Color3.new(1, 1, 1)
     b.Font = Enum.Font.Gotham
-    
-    -- כאן הגדלתי את הטקסט
     b.TextSize = 16 
-    
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
     return b
 end
 
--- יצירת הכפתורים בקטגוריות מסודרות
-local btnHome    = createButton("Home",    UDim2.new(0.02, 0, 0.15, 0))
-local btnTarget  = createButton("Target",  UDim2.new(0.02, 0, 0.26, 0))
-local btnVisuals = createButton("Visuals", UDim2.new(0.02, 0, 0.37, 0))
-local btnPlayer  = createButton("Player",  UDim2.new(0.02, 0, 0.48, 0))
-local btnWorld   = createButton("World",   UDim2.new(0.02, 0, 0.59, 0))
-local btnMisc    = createButton("Misc",    UDim2.new(0.02, 0, 0.70, 0))
-local btnSettings= createButton("Settings",UDim2.new(0.02, 0, 0.81, 0))
+-- יצירת הכפתורים (מסודרים בשתי עמודות להתאמה לגובה 300)
+local btnHome    = createButton("Home",    UDim2.new(0.05, 0, 0.20, 0))
+local btnTarget  = createButton("Target",  UDim2.new(0.05, 0, 0.40, 0))
+local btnVisuals = createButton("Visuals", UDim2.new(0.05, 0, 0.60, 0))
+
+local btnPlayer  = createButton("Player",  UDim2.new(0.35, 0, 0.20, 0))
+local btnWorld   = createButton("World",   UDim2.new(0.35, 0, 0.40, 0))
+local btnSettings= createButton("Settings",UDim2.new(0.35, 0, 0.60, 0))
 
 -- הדפסות לבדיקה
 btnHome.MouseButton1Click:Connect(function() print("Home pressed") end)
@@ -88,7 +85,6 @@ btnTarget.MouseButton1Click:Connect(function() print("Target pressed") end)
 btnVisuals.MouseButton1Click:Connect(function() print("Visuals pressed") end)
 btnPlayer.MouseButton1Click:Connect(function() print("Player pressed") end)
 btnWorld.MouseButton1Click:Connect(function() print("World pressed") end)
-btnMisc.MouseButton1Click:Connect(function() print("Misc pressed") end)
 btnSettings.MouseButton1Click:Connect(function() print("Settings pressed") end)
 
 return true
