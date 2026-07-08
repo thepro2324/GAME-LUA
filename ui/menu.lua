@@ -12,7 +12,7 @@ screen.Name = "MyMenu"
 
 -- פריים ראשי (500x300)
 local frame = Instance.new("Frame", screen)
-frame.Size = UDim2.new(0, 500, 0, 300)
+frame.Size = UDim2.new(0, 520, 0, 320)
 frame.Position = UDim2.new(0.5, -250, 0.5, -150) -- מחושב למרכז לפי הגובה החדש
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BorderSizePixel = 0
