@@ -1,4 +1,5 @@
 -- הגנה מפני הרצה כפולה
+local Menu = {}
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
 
@@ -86,4 +87,4 @@ createButton("Player")
 createButton("World")
 createButton("Settings")
 
-return true
+return Menu
