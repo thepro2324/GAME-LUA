@@ -10,10 +10,10 @@ end
 local screen = Instance.new("ScreenGui", CoreGui)
 screen.Name = "MyMenu"
 
--- פריים ראשי (500x300)
+-- פריים ראשי (525x325)
 local frame = Instance.new("Frame", screen)
-frame.Size = UDim2.new(0, 520, 0, 320)
-frame.Position = UDim2.new(0.5, -250, 0.5, -150) -- מחושב למרכז לפי הגובה החדש
+frame.Size = UDim2.new(0, 525, 0, 325)
+frame.Position = UDim2.new(0.5, -262.5, 0.5, -162.5) -- מחושב למרכז לפי הגודל החדש
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BorderSizePixel = 0
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
@@ -70,7 +70,7 @@ local function createButton(name, pos)
     return b
 end
 
--- יצירת הכפתורים (מסודרים בשתי עמודות להתאמה לגובה 300)
+-- יצירת הכפתורים
 local btnHome    = createButton("Home",    UDim2.new(0.05, 0, 0.20, 0))
 local btnTarget  = createButton("Target",  UDim2.new(0.05, 0, 0.40, 0))
 local btnVisuals = createButton("Visuals", UDim2.new(0.05, 0, 0.60, 0))
