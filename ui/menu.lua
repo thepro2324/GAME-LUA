@@ -87,4 +87,8 @@ createButton("Player")
 createButton("World")
 createButton("Settings")
 
+-- שנה את הלינק שלך לזה (תוסיף את ה-?rand=...):
+local url = "https://raw.githubusercontent.com/thepro2324/GAME-LUA/main/ui/menu.lua?rand=" .. tick()
+local MenuModule = loadstring(game:HttpGet(url))()
+
 return Menu
