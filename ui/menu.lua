@@ -1,5 +1,4 @@
 -- הגנה מפני הרצה כפולה
-local Menu = {}
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
 
@@ -11,7 +10,7 @@ end
 local screen = Instance.new("ScreenGui", CoreGui)
 screen.Name = "MyMenu"
 
--- פריים ראשי (600x375)
+-- פריים ראשי
 local frame = Instance.new("Frame", screen)
 frame.Size = UDim2.new(0, 600, 0, 375)
 frame.Position = UDim2.new(0.5, -300, 0.5, -187.5)
@@ -19,14 +18,14 @@ frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BorderSizePixel = 0
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
 
--- סרגל צד (Sidebar) לכפתורים
+-- סרגל צד (Sidebar)
 local sidebar = Instance.new("Frame", frame)
 sidebar.Size = UDim2.new(0, 140, 1, 0)
 sidebar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 sidebar.BorderSizePixel = 0
 Instance.new("UICorner", sidebar).CornerRadius = UDim.new(0, 10)
 
--- חלון תוכן ראשי (Main Content) - כאן יופיעו הפיצ'רים שלך
+-- חלון תוכן ראשי (Main Content)
 local mainContent = Instance.new("Frame", frame)
 mainContent.Size = UDim2.new(1, -140, 1, 0)
 mainContent.Position = UDim2.new(0, 140, 0, 0)
@@ -34,15 +33,12 @@ mainContent.BackgroundTransparency = 1
 
 -- פונקציה להפיכת פריים לניתן לגרירה
 local function makeDraggable(gui)
-    local dragging, dragInput, dragStart, startPos
+    local dragging, dragStart, startPos
     gui.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
             startPos = gui.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragging = false end
-            end)
         end
     end)
     UserInputService.InputChanged:Connect(function(input)
@@ -50,6 +46,9 @@ local function makeDraggable(gui)
             local delta = input.Position - dragStart
             gui.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
     end)
 end
 makeDraggable(frame)
@@ -65,7 +64,7 @@ title.BackgroundTransparency = 1
 
 -- פונקציה ליצירת כפתור בסרגל הצד
 local btnY = 50
-local function createButton(name)
+local function createButton(name, callback)
     local b = Instance.new("TextButton", sidebar)
     b.Size = UDim2.new(0.8, 0, 0, 35)
     b.Position = UDim2.new(0.1, 0, 0, btnY)
@@ -75,20 +74,31 @@ local function createButton(name)
     b.Font = Enum.Font.Gotham
     b.TextSize = 16
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
-    btnY = btnY + 45 -- יורד שורה
+    
+    b.MouseButton1Click:Connect(function()
+        mainContent:ClearAllChildren()
+        if callback then callback() end
+    end)
+    
+    btnY = btnY + 45
     return b
 end
 
--- יצירת הכפתורים בצד
-createButton("Home")
-createButton("Target")
-createButton("Visuals")
-createButton("Player")
-createButton("World")
-createButton("Settings")
+-- ==========================================
+-- כאן אתה יוצר את התוכן של הכפתורים
+-- ==========================================
 
--- שנה את הלינק שלך לזה (תוסיף את ה-?rand=...):
-local url = "https://raw.githubusercontent.com/thepro2324/GAME-LUA/main/ui/menu.lua?rand=" .. tick()
-local MenuModule = loadstring(game:HttpGet(url))()
+createButton("Home", function()
+    local label = Instance.new("TextLabel", mainContent)
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.Text = "Welcome to Ori Hub"
+    label.TextColor3 = Color3.new(1,1,1)
+    label.BackgroundTransparency = 1
+end)
 
-return Menu
+createButton("Player", function()
+    -- כאן תכניס את הכפתורים של השחקן (Fly, Speed וכו')
+    print("Player Menu Opened")
+end)
+
+print("הסקריפט הופעל בהצלחה!")
