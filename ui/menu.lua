@@ -65,6 +65,10 @@ local function createButton(name, pos)
     b.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     b.TextColor3 = Color3.new(1, 1, 1)
     b.Font = Enum.Font.Gotham
+    
+    -- כאן הגדלתי את הטקסט
+    b.TextSize = 16 
+    
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
     return b
 end
