@@ -13,9 +13,6 @@ local function safeCall(mod, func, ...)
     if not success then warn("Error in " .. func .. ": " .. tostring(err)) end
 end
 
-local Elements = {}
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 
 function Elements.addCorner(parent, radius)
     local corner = Instance.new("UICorner")
