@@ -25,6 +25,7 @@ sidebar.Size = UDim2.new(0, 140, 1, 0)
 sidebar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 sidebar.BorderSizePixel = 0
 Instance.new("UICorner", sidebar).CornerRadius = UDim.new(0, 10)
+
 -- חלון תוכן ראשי (Main Content) - כאן יופיעו הפיצ'רים שלך
 local mainContent = Instance.new("Frame", frame)
 mainContent.Size = UDim2.new(1, -140, 1, 0)
