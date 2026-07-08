@@ -1,3 +1,18 @@
+-- הגדרת הספריה
+local Elements = {}
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+-- כאן תדביק את כל הפונקציות מתוך elements.lua 
+-- (כל מה שמתחיל ב-function Elements.addCorner ועד הסוף)
+-- ... [הדבק כאן את הקוד מ-elements.lua] ...
+
+-- פונקציית safeCall (חשוב כדי שלא יהיו שגיאות)
+local function safeCall(mod, func, ...)
+    local success, err = pcall(function(...) return mod[func](...) end, ...)
+    if not success then warn("Error in " .. func .. ": " .. tostring(err)) end
+end
+
 local Elements = {}
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
