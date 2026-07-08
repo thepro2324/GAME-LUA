@@ -1,80 +1,36 @@
-local HomeMod = {}
+return function(tab)
+    local Players = game:GetService("Players")
 
-function HomeMod.init(tab, Elements, UIReferences, Localization, updateLangFunc, safeCall, PlayerMod, VisualsMod, WorldMod)
-    -- --- כפתורי שפה ---
-    local langContainer = Instance.new("Frame", tab)
-    langContainer.Size = UDim2.new(0.95, 0, 0, 35)
-    langContainer.BackgroundTransparency = 1
+    -- פונקציה ליצירת טקסט מעוצב
+    local function createStat(name, initialText, pos)
+        local label = Instance.new("TextLabel", tab)
+        label.Size = UDim2.new(0.9, 0, 0, 30)
+        label.Position = pos
+        label.Text = name .. ": " .. initialText
+        label.TextColor3 = Color3.fromRGB(200, 200, 200)
+        label.BackgroundTransparency = 1
+        label.Font = Enum.Font.Gotham
+        label.TextSize = 14
+        label.TextXAlignment = Enum.TextAlignment.Left
+        return label
+    end
 
-    local enBtn = Instance.new("TextButton", langContainer)
-    enBtn.Size = UDim2.new(0.47, 0, 1, 0)
-    enBtn.Text = "🇺🇸 English"
-    enBtn.TextColor3 = Color3.fromRGB(240, 240, 245)
-    enBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-    Elements.addCorner(enBtn, UDim.new(0, 5))
-    enBtn.MouseButton1Click:Connect(function() updateLangFunc("EN") end)
-
-    local heBtn = Instance.new("TextButton", langContainer)
-    heBtn.Size = UDim2.new(0.47, 0, 1, 0)
-    heBtn.Position = UDim2.new(0.53, 0, 0, 0)
-    heBtn.Text = "🇮🇱 עברית"
-    heBtn.TextColor3 = Color3.fromRGB(240, 240, 245)
-    heBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-    Elements.addCorner(heBtn, UDim.new(0, 5))
-    heBtn.MouseButton1Click:Connect(function() updateLangFunc("HE") end)
-
-    -- --- טקסטים (Welcome & Version) ---
-    local textContainer = Instance.new("Frame", tab)
-    textContainer.Size = UDim2.new(0.95, 0, 0, 50)
-    textContainer.Position = UDim2.new(0, 0, 0, 40)
-    textContainer.BackgroundTransparency = 1
-
-    UIReferences.welcomeLabel = Instance.new("TextLabel", textContainer)
-    UIReferences.welcomeLabel.Size = UDim2.new(1, 0, 0.5, 0)
-    UIReferences.welcomeLabel.Text = Localization.HE.Welcome -- ניתן לשנות לדינמי בהמשך
-    UIReferences.welcomeLabel.BackgroundTransparency = 1
-    UIReferences.welcomeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-    UIReferences.versionLabel = Instance.new("TextLabel", textContainer)
-    UIReferences.versionLabel.Size = UDim2.new(1, 0, 0.5, 0)
-    UIReferences.versionLabel.Position = UDim2.new(0, 0, 0.5, 5)
-    UIReferences.versionLabel.Text = Localization.HE.Version
-    UIReferences.versionLabel.BackgroundTransparency = 1
-    UIReferences.versionLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-
-    -- --- גריד כפתורים ---
-    local hGrid = Instance.new("Frame", tab)
-    hGrid.Size = UDim2.new(0.95, 0, 0, 120)
-    hGrid.Position = UDim2.new(0, 0, 0, 100)
-    hGrid.BackgroundTransparency = 1
+    -- 1. כמות שחקנים מחוברים (מתעדכן בלייב)
+    local playersStat = createStat("Players Online", #Players:GetPlayers(), UDim2.new(0.05, 0, 0.1, 0))
     
-    local gh = Instance.new("UIGridLayout", hGrid) 
-    gh.CellSize = UDim2.new(0.48, 0, 0, 32) 
-    gh.CellPadding = UDim2.new(0, 8, 0, 8)
+    -- עדכון אוטומטי כשמישהו נכנס/יוצא
+    Players.PlayerAdded:Connect(function() playersStat.Text = "Players Online: " .. #Players:GetPlayers() end)
+    Players.PlayerRemoving:Connect(function() playersStat.Text = "Players Online: " .. #Players:GetPlayers() end)
 
-    -- יצירת הכפתורים
-    UIReferences.btnAntiAFK = Elements.createToggleButton(hGrid, Localization.HE.AntiAFK, false, function(s) safeCall(PlayerMod, "toggleAntiAFK", s) end)
-    UIReferences.btnAutoReset = Elements.createToggleButton(hGrid, Localization.HE.AutoReset, false, function(s) safeCall(PlayerMod, "toggleAutoReset", s) end)
-    UIReferences.btnHideUser = Elements.createToggleButton(hGrid, Localization.HE.HideUser, false, function(s) safeCall(VisualsMod, "toggleHideName", s) end)
-    UIReferences.btnFPS = Elements.createToggleButton(hGrid, Localization.HE.FPSUnlock, false, function(s) safeCall(WorldMod, "toggleFPS", s) end)
-
-    -- --- תצוגת שחקנים ---
-    UIReferences.playerCountLabel = Instance.new("TextLabel", tab)
-    UIReferences.playerCountLabel.Size = UDim2.new(0.95, 0, 0, 30)
-    UIReferences.playerCountLabel.Position = UDim2.new(0.025, 0, 0, 230)
-    UIReferences.playerCountLabel.BackgroundTransparency = 1
-    UIReferences.playerCountLabel.TextColor3 = Color3.fromRGB(30, 215, 96)
-    UIReferences.playerCountLabel.Font = Enum.Font.SourceSansBold
+    -- 2. כמות שימושים (סטטי כרגע, אפשר לחבר ל-API)
+    local usesStat = createStat("Script Uses", "1,240", UDim2.new(0.05, 0, 0.2, 0))
     
-    -- לולאה בטוחה (עוצרת אם הטקסט נמחק)
-    task.spawn(function()
-        while UIReferences.playerCountLabel and UIReferences.playerCountLabel.Parent do
-            local count = #game:GetService("Players"):GetPlayers()
-            local max = game:GetService("Players").MaxPlayers
-            UIReferences.playerCountLabel.Text = Localization.HE.PlayersOnline .. count .. "/" .. max
-            task.wait(2)
-        end
-    end)
+    -- הודעת ברוך הבא
+    local welcome = Instance.new("TextLabel", tab)
+    welcome.Size = UDim2.new(0.9, 0, 0, 30)
+    welcome.Position = UDim2.new(0.05, 0, 0.4, 0)
+    welcome.Text = "Welcome, " .. Players.LocalPlayer.Name
+    welcome.TextColor3 = Color3.fromRGB(255, 255, 255)
+    welcome.BackgroundTransparency = 1
+    welcome.Font = Enum.Font.GothamBold
 end
-
-return HomeMod
