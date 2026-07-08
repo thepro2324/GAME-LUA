@@ -10,10 +10,10 @@ end
 local screen = Instance.new("ScreenGui", CoreGui)
 screen.Name = "MyMenu"
 
--- פריים ראשי (525x325)
+-- פריים ראשי (600x375)
 local frame = Instance.new("Frame", screen)
-frame.Size = UDim2.new(0, 525, 0, 325)
-frame.Position = UDim2.new(0.5, -262.5, 0.5, -162.5) -- מחושב למרכז לפי הגודל החדש
+frame.Size = UDim2.new(0, 600, 0, 375)
+frame.Position = UDim2.new(0.5, -300, 0.5, -187.5) -- ממורכז
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BorderSizePixel = 0
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
@@ -53,31 +53,30 @@ title.Size = UDim2.new(1, 0, 0, 40)
 title.Text = "ori_dev_hub"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.Font = Enum.Font.GothamBold
-title.TextSize = 22
+title.TextSize = 26 -- כותרת גדולה יותר
 title.BackgroundTransparency = 1
 
--- פונקציה ליצירת כפתור
+-- פונקציה ליצירת כפתור (אחד מתחת לשני)
 local function createButton(name, pos)
     local b = Instance.new("TextButton", frame)
-    b.Size = UDim2.new(0.25, 0, 0, 35)
+    b.Size = UDim2.new(0.9, 0, 0, 45) -- רוחב גדול יותר
     b.Position = pos
     b.Text = name
     b.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     b.TextColor3 = Color3.new(1, 1, 1)
     b.Font = Enum.Font.Gotham
-    b.TextSize = 16 
+    b.TextSize = 20 -- טקסט גדול וברור
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
     return b
 end
 
--- יצירת הכפתורים
-local btnHome    = createButton("Home",    UDim2.new(0.05, 0, 0.20, 0))
-local btnTarget  = createButton("Target",  UDim2.new(0.05, 0, 0.40, 0))
-local btnVisuals = createButton("Visuals", UDim2.new(0.05, 0, 0.60, 0))
-
-local btnPlayer  = createButton("Player",  UDim2.new(0.35, 0, 0.20, 0))
-local btnWorld   = createButton("World",   UDim2.new(0.35, 0, 0.40, 0))
-local btnSettings= createButton("Settings",UDim2.new(0.35, 0, 0.60, 0))
+-- יצירת הכפתורים אחד מתחת לשני
+local btnHome    = createButton("Home",     UDim2.new(0.05, 0, 0.15, 0))
+local btnTarget  = createButton("Target",   UDim2.new(0.05, 0, 0.28, 0))
+local btnVisuals = createButton("Visuals",  UDim2.new(0.05, 0, 0.41, 0))
+local btnPlayer  = createButton("Player",   UDim2.new(0.05, 0, 0.54, 0))
+local btnWorld   = createButton("World",    UDim2.new(0.05, 0, 0.67, 0))
+local btnSettings= createButton("Settings", UDim2.new(0.05, 0, 0.80, 0))
 
 -- הדפסות לבדיקה
 btnHome.MouseButton1Click:Connect(function() print("Home pressed") end)
