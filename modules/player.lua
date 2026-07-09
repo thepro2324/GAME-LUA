@@ -1,5 +1,5 @@
 -- =========================================================================
--- INTEGRATED ORI HUB (PLAYER TAB EXPANDED)
+-- ORI HUB - FIXED & OPTIMIZED
 -- =========================================================================
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -8,13 +8,16 @@ local CoreGui = game:GetService("CoreGui")
 local lp = Players.LocalPlayer
 local cam = workspace.CurrentCamera
 
+-- ניקוי קודם
 if CoreGui:FindFirstChild("MyMenu") then CoreGui:FindFirstChild("MyMenu"):Destroy() end
 
+-- יצירת UI בסיסי
 local screen = Instance.new("ScreenGui", CoreGui); screen.Name = "MyMenu"
 local frame = Instance.new("Frame", screen); frame.Size = UDim2.new(0, 600, 0, 375); frame.Position = UDim2.new(0.5, -300, 0.5, -187.5); frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30); Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
 local sidebar = Instance.new("Frame", frame); sidebar.Size = UDim2.new(0, 140, 1, 0); sidebar.BackgroundColor3 = Color3.fromRGB(40, 40, 40); Instance.new("UICorner", sidebar).CornerRadius = UDim.new(0, 10)
 local mainContent = Instance.new("Frame", frame); mainContent.Size = UDim2.new(1, -140, 1, 0); mainContent.Position = UDim2.new(0, 140, 0, 0); mainContent.BackgroundTransparency = 1
 
+-- ספריית אלמנטים
 local Elements = {}
 function Elements.addCorner(p, r) local c = Instance.new("UICorner", p); c.CornerRadius = r or UDim.new(0, 6) end
 
@@ -36,9 +39,10 @@ function Elements.createSlider(parent, text, min, max, default, callback)
     end end)
 end
 
--- פונקציות לוגיקה (Fly)
+-- לוגיקה
 local flyConn, bodyVel, bodyGyro
 local function updateSpeed(v) local h = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid") if h then h.WalkSpeed = v end end
+local function updateJump(v) local h = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid") if h then h.JumpPower = v end end
 local function toggleFly(s)
     if flyConn then flyConn:Disconnect(); flyConn = nil end
     if bodyVel then bodyVel:Destroy(); bodyVel = nil end
@@ -66,17 +70,18 @@ end
 createButton("Home", function() end)
 
 createButton("Player", function()
-    local scroll = Instance.new("ScrollingFrame", mainContent); scroll.Size = UDim2.new(1,0,1,0); scroll.BackgroundTransparency = 1; Instance.new("UIListLayout", scroll).Padding = UDim.new(0, 10); scroll.ScrollBarThickness = 2
+    local scroll = Instance.new("ScrollingFrame", mainContent); scroll.Size = UDim2.new(1,0,1,0); scroll.BackgroundTransparency = 1; scroll.ScrollBarThickness = 2
+    scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y -- זה יסדר את בעיית הגלילה
+    local layout = Instance.new("UIListLayout", scroll); layout.Padding = UDim.new(0, 10); layout.PaddingTop = UDim.new(0, 10); layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     
     Elements.createSlider(scroll, "Speed", 16, 200, 16, updateSpeed)
-    Elements.createSlider(scroll, "Jump Power", 50, 300, 50, function(v) end) -- פלייסהולדר
+    Elements.createSlider(scroll, "Jump Power", 50, 300, 50, updateJump)
     
     Elements.createToggleButton(scroll, "Fly", false, toggleFly)
-    Elements.createToggleButton(scroll, "Noclip", false, function(s) end) -- פלייסהולדר
-    Elements.createToggleButton(scroll, "Inf Jump", false, function(s) end) -- פלייסהולדר
-    Elements.createToggleButton(scroll, "Auto Regen", false, function(s) end) -- פלייסהולדר
+    Elements.createToggleButton(scroll, "Noclip", false, function(s) end)
+    Elements.createToggleButton(scroll, "Inf Jump", false, function(s) end)
+    Elements.createToggleButton(scroll, "Auto Regen", false, function(s) end)
     
-    -- כפתור Reset נפרד
-    local resetBtn = Instance.new("TextButton", scroll); resetBtn.Size = UDim2.new(0.9, 0, 0, 32); resetBtn.BackgroundColor3 = Color3.fromRGB(150, 60, 60); resetBtn.Text = "Reset Character"; resetBtn.TextColor3 = Color3.new(1,1,1); Elements.addCorner(resetBtn)
+    local resetBtn = Instance.new("TextButton", scroll); resetBtn.Size = UDim2.new(0.9, 0, 0, 32); resetBtn.BackgroundColor3 = Color3.fromRGB(150, 60, 60); resetBtn.Text = "Reset Character"; resetBtn.TextColor3 = Color3.new(1,1,1); Elements.addCorner(resetBtn, UDim.new(0, 5))
     resetBtn.MouseButton1Click:Connect(function() if lp.Character then lp.Character:BreakJoints() end end)
 end)
