@@ -1,4 +1,3 @@
--- modules/target.lua
 local TargetMod = {}
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -7,7 +6,7 @@ TargetMod.isTeleporting = false
 TargetMod.targetPlayer = nil
 TargetMod.targetConnection = nil
 
--- לוגיקה טהורה - אין כאן UI בכלל!
+-- לוגיקה
 function TargetMod.stopTargeting()
     TargetMod.isTeleporting = false
     if TargetMod.targetConnection then 
@@ -61,16 +60,29 @@ function TargetMod.startTargeting(targetName)
     return true
 end
 
--- בניית ה-UI של הטאב
+-- בניית ה-UI (עם Layout מסודר)
 function TargetMod.init(tab, Elements, UIReferences, Localization, safeCall)
+    tab:ClearAllChildren()
+    
+    local layout = Instance.new("UIListLayout", tab)
+    layout.Padding = UDim.new(0, 10)
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    layout.PaddingTop = UDim.new(0, 10)
+
     local textBox = Instance.new("TextBox", tab)
-    textBox.Size = UDim2.new(0.9, 0, 0, 35); textBox.Position = UDim2.new(0.05, 0, 0, 10)
+    textBox.Size = UDim2.new(0.9, 0, 0, 35)
     textBox.PlaceholderText = Localization.HE.Placeholder
-    Elements.addCorner(textBox, UDim.new(0, 6)); Elements.addStroke(textBox, Color3.fromRGB(45, 45, 55), 1)
+    textBox.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    textBox.TextColor3 = Color3.new(1, 1, 1)
+    Elements.addCorner(textBox, UDim.new(0, 6))
+    Elements.addStroke(textBox, Color3.fromRGB(45, 45, 55), 1)
 
     local startButton = Instance.new("TextButton", tab)
-    startButton.Size = UDim2.new(0.9, 0, 0, 40); startButton.Position = UDim2.new(0.05, 0, 0, 60)
+    startButton.Size = UDim2.new(0.9, 0, 0, 40)
     startButton.Text = Localization.HE.StartTarget
+    startButton.BackgroundColor3 = Color3.fromRGB(30, 130, 40)
+    startButton.TextColor3 = Color3.new(1, 1, 1)
+    startButton.Font = Enum.Font.GothamBold
     Elements.addCorner(startButton, UDim.new(0, 6))
 
     startButton.MouseButton1Click:Connect(function()
