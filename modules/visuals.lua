@@ -4,13 +4,13 @@ local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
 local lp = Players.LocalPlayer
 
--- משתנים מקומיים (במקום _G)
+-- משתנים מקומיים לניהול המצב
 local espEnabled = false
 local espBox = false
 local espNames = false
 local espConnection = nil
 
--- לוגיקה פנימית של עדכון ה-ESP
+-- לוגיקת ESP פנימית
 local function updateESP()
     if not espEnabled then return end
 
@@ -19,7 +19,7 @@ local function updateESP()
             local char = p.Character
             local espFolder = char:FindFirstChild("ori_esp")
 
-            -- יצירת תיקייה אם לא קיימת
+            -- יצירת תיקיית עבודה
             if not espFolder then
                 espFolder = Instance.new("Folder", char)
                 espFolder.Name = "ori_esp"
@@ -33,7 +33,7 @@ local function updateESP()
                     highlight.Name = "Box"
                 end
                 highlight.FillTransparency = 0.5
-                highlight.FillColor = Color3.new(1, 0, 0)
+                highlight.FillColor = Color3.fromRGB(255, 0, 0)
                 highlight.OutlineColor = Color3.new(1, 1, 1)
             elseif highlight then
                 highlight:Destroy()
@@ -54,8 +54,9 @@ local function updateESP()
                     tl.Size = UDim2.new(1, 0, 1, 0)
                     tl.BackgroundTransparency = 1
                     tl.TextColor3 = Color3.new(1, 1, 1)
-                    tl.Font = Enum.Font.SourceSansBold
+                    tl.Font = Enum.Font.GothamBold
                     tl.TextSize = 14
+                    tl.TextStrokeTransparency = 0
                 end
                 billboard.TextLabel.Text = p.Name
             elseif billboard then
@@ -86,16 +87,23 @@ function VisualsMod.toggleFullbright(state)
     Lighting.GlobalShadows = not state
 end
 
--- בניית הממשק (UI)
+-- בניית ה-UI
 function VisualsMod.init(tab, Elements, UIReferences, Localization, safeCall)
+    tab:ClearAllChildren()
+    
     local scroll = Instance.new("ScrollingFrame", tab)
     scroll.Size = UDim2.new(1, 0, 1, 0); scroll.BackgroundTransparency = 1; scroll.CanvasSize = UDim2.new(0, 0, 0, 300)
-    Instance.new("UIListLayout", scroll).Padding = UDim.new(0, 10)
+    
+    local layout = Instance.new("UIListLayout", scroll)
+    layout.Padding = UDim.new(0, 10)
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    layout.PaddingTop = UDim.new(0, 10)
 
-    Elements.createToggleButton(scroll, "ESP Master", false, function(s) safeCall(VisualsMod, "toggleMasterESP", s) end)
-    Elements.createToggleButton(scroll, "ESP Boxes", false, function(s) safeCall(VisualsMod, "toggleESPBox", s) end)
-    Elements.createToggleButton(scroll, "ESP Names", false, function(s) safeCall(VisualsMod, "toggleESPNames", s) end)
-    Elements.createToggleButton(scroll, "Fullbright", false, function(s) safeCall(VisualsMod, "toggleFullbright", s) end)
+    -- שימוש ב-Elements שקבענו במערכת
+    Elements.createToggleButton(scroll, "ESP Master", espEnabled, function(s) VisualsMod.toggleMasterESP(s) end)
+    Elements.createToggleButton(scroll, "ESP Boxes", espBox, function(s) VisualsMod.toggleESPBox(s) end)
+    Elements.createToggleButton(scroll, "ESP Names", espNames, function(s) VisualsMod.toggleESPNames(s) end)
+    Elements.createToggleButton(scroll, "Fullbright", false, function(s) VisualsMod.toggleFullbright(s) end)
 end
 
 return VisualsMod
