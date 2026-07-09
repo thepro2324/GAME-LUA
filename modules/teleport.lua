@@ -10,12 +10,7 @@ local lp = Players.LocalPlayer
 local ctrlClickEnabled = false
 local targetConnection = nil
 
--- 1. פונקציית Ctrl+Click (מאזין מופעל פעם אחת)
-function TeleportMod.toggleCtrlClick(state)
-    ctrlClickEnabled = state
-end
-
--- האזנה למקש העכבר (פועל תמיד ברקע)
+-- האזנה למקש העכבר (פועל פעם אחת ברקע)
 UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
     if ctrlClickEnabled and input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -28,7 +23,9 @@ UserInputService.InputBegan:Connect(function(input, gpe)
     end
 end)
 
--- 2. מנגנון מעקב צמוד (Targeter)
+-- פונקציות לוגיקה
+function TeleportMod.toggleCtrlClick(state) ctrlClickEnabled = state end
+
 function TeleportMod.manageTargeter(state, targetName)
     if not state then
         if targetConnection then targetConnection:Disconnect(); targetConnection = nil end
@@ -47,7 +44,6 @@ function TeleportMod.manageTargeter(state, targetName)
     return false
 end
 
--- 3. מעבר שרת (Server Hop)
 function TeleportMod.serverHop()
     local req = syn and syn.request or http and http.request or http_request or request
     if req then
@@ -69,29 +65,33 @@ function TeleportMod.serverHop()
     TeleportService:Teleport(game.PlaceId, lp)
 end
 
--- 4. התחברות מחדש (Rejoin)
-function TeleportMod.rejoin()
-    TeleportService:Teleport(game.PlaceId, lp)
-end
+function TeleportMod.rejoin() TeleportService:Teleport(game.PlaceId, lp) end
 
--- בניית ממשק המשתמש (UI)
+-- בניית ה-UI בתוך המערכת
 function TeleportMod.init(tab, Elements, UIReferences, Localization, safeCall)
+    tab:ClearAllChildren()
     local scroll = Instance.new("ScrollingFrame", tab)
-    scroll.Size = UDim2.new(1, 0, 1, 0); scroll.BackgroundTransparency = 1; scroll.CanvasSize = UDim2.new(0, 0, 0, 300)
-    Instance.new("UIListLayout", scroll).Padding = UDim.new(0, 10)
+    scroll.Size = UDim2.new(1, 0, 1, 0); scroll.BackgroundTransparency = 1; scroll.CanvasSize = UDim2.new(0, 0, 0, 400)
+    
+    local layout = Instance.new("UIListLayout", scroll); layout.Padding = UDim.new(0, 10); layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
     -- כפתורי פעולה
-    Elements.createToggleButton(scroll, "Ctrl + Click TP", false, function(s) TeleportMod.toggleCtrlClick(s) end)
+    Elements.createToggleButton(scroll, "Ctrl + Click TP", ctrlClickEnabled, function(s) TeleportMod.toggleCtrlClick(s) end)
     
-    local hopBtn = Instance.new("TextButton", scroll)
-    hopBtn.Size = UDim2.new(0.9, 0, 0, 40); hopBtn.Text = "Server Hop"; hopBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-    Elements.addCorner(hopBtn, UDim.new(0, 5))
-    hopBtn.MouseButton1Click:Connect(function() TeleportMod.serverHop() end)
+    -- Targeter UI
+    local targetInput = Instance.new("TextBox", scroll); targetInput.Size = UDim2.new(0.9, 0, 0, 35); targetInput.PlaceholderText = "Target Username"; targetInput.BackgroundColor3 = Color3.fromRGB(35, 35, 45); targetInput.TextColor3 = Color3.new(1,1,1)
+    Elements.addCorner(targetInput, UDim.new(0, 5))
+    
+    Elements.createToggleButton(scroll, "Targeter", false, function(s) 
+        TeleportMod.manageTargeter(s, targetInput.Text)
+    end)
 
-    local reBtn = Instance.new("TextButton", scroll)
-    reBtn.Size = UDim2.new(0.9, 0, 0, 40); reBtn.Text = "Rejoin"; reBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-    Elements.addCorner(reBtn, UDim.new(0, 5))
-    reBtn.MouseButton1Click:Connect(function() TeleportMod.rejoin() end)
+    -- כפתורי שרת
+    local hopBtn = Instance.new("TextButton", scroll); hopBtn.Size = UDim2.new(0.9, 0, 0, 40); hopBtn.Text = "Server Hop"; hopBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60); hopBtn.TextColor3 = Color3.new(1,1,1)
+    Elements.addCorner(hopBtn, UDim.new(0, 5)); hopBtn.MouseButton1Click:Connect(function() TeleportMod.serverHop() end)
+
+    local reBtn = Instance.new("TextButton", scroll); reBtn.Size = UDim2.new(0.9, 0, 0, 40); reBtn.Text = "Rejoin"; reBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60); reBtn.TextColor3 = Color3.new(1,1,1)
+    Elements.addCorner(reBtn, UDim.new(0, 5)); reBtn.MouseButton1Click:Connect(function() TeleportMod.rejoin() end)
 end
 
 return TeleportMod
