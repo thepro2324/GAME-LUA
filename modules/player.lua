@@ -1,5 +1,5 @@
 -- =========================================================================
--- INTEGRATED ORI HUB (ONE FILE)
+-- INTEGRATED ORI HUB (PLAYER TAB EXPANDED)
 -- =========================================================================
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -8,24 +8,23 @@ local CoreGui = game:GetService("CoreGui")
 local lp = Players.LocalPlayer
 local cam = workspace.CurrentCamera
 
--- 1. הגנה מפני הרצה כפולה
 if CoreGui:FindFirstChild("MyMenu") then CoreGui:FindFirstChild("MyMenu"):Destroy() end
 
--- 2. יצירת UI בסיסי
 local screen = Instance.new("ScreenGui", CoreGui); screen.Name = "MyMenu"
 local frame = Instance.new("Frame", screen); frame.Size = UDim2.new(0, 600, 0, 375); frame.Position = UDim2.new(0.5, -300, 0.5, -187.5); frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30); Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
 local sidebar = Instance.new("Frame", frame); sidebar.Size = UDim2.new(0, 140, 1, 0); sidebar.BackgroundColor3 = Color3.fromRGB(40, 40, 40); Instance.new("UICorner", sidebar).CornerRadius = UDim.new(0, 10)
 local mainContent = Instance.new("Frame", frame); mainContent.Size = UDim2.new(1, -140, 1, 0); mainContent.Position = UDim2.new(0, 140, 0, 0); mainContent.BackgroundTransparency = 1
 
--- 3. פונקציית עזר ל-Elements (עיצוב)
 local Elements = {}
 function Elements.addCorner(p, r) local c = Instance.new("UICorner", p); c.CornerRadius = r or UDim.new(0, 6) end
+
 function Elements.createToggleButton(parent, text, isActiveByDefault, callback)
     local button = Instance.new("TextButton", parent); button.Size = UDim2.new(0.9, 0, 0, 32); button.BackgroundColor3 = Color3.fromRGB(22, 22, 28); button.Font = Enum.Font.GothamBold; button.TextSize = 12; Elements.addCorner(button, UDim.new(0, 5))
     local state = isActiveByDefault; local function updateVisuals() button.Text = text .. (state and " : ON" or " : OFF"); button.TextColor3 = state and Color3.fromRGB(80, 255, 140) or Color3.fromRGB(220, 80, 80) end; updateVisuals()
     button.MouseButton1Click:Connect(function() state = not state; updateVisuals(); callback(state) end)
     return button
 end
+
 function Elements.createSlider(parent, text, min, max, default, callback)
     local frame = Instance.new("Frame", parent); frame.Size = UDim2.new(0.9, 0, 0, 40); frame.BackgroundTransparency = 1
     local label = Instance.new("TextLabel", frame); label.Size = UDim2.new(1, 0, 0, 20); label.Text = text .. " - " .. default; label.TextColor3 = Color3.new(1,1,1); label.BackgroundTransparency = 1
@@ -37,8 +36,8 @@ function Elements.createSlider(parent, text, min, max, default, callback)
     end end)
 end
 
--- 4. לוגיקת שחקן
-local flyConn, bodyVel, bodyGyro, noclipConn, infJumpConn
+-- פונקציות לוגיקה (Fly)
+local flyConn, bodyVel, bodyGyro
 local function updateSpeed(v) local h = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid") if h then h.WalkSpeed = v end end
 local function toggleFly(s)
     if flyConn then flyConn:Disconnect(); flyConn = nil end
@@ -57,21 +56,27 @@ local function toggleFly(s)
     end)
 end
 
--- 5. בניית התפריט
+-- בניית התפריט
 local btnY = 50
 local function createButton(name, callback)
     local b = Instance.new("TextButton", sidebar); b.Size = UDim2.new(0.8, 0, 0, 35); b.Position = UDim2.new(0.1, 0, 0, btnY); b.Text = name; b.BackgroundColor3 = Color3.fromRGB(60, 60, 60); b.TextColor3 = Color3.new(1,1,1); b.Font = Enum.Font.Gotham; Elements.addCorner(b, UDim.new(0, 6))
     b.MouseButton1Click:Connect(function() mainContent:ClearAllChildren(); callback() end); btnY += 45
 end
 
--- יצירת הכפתורים
 createButton("Home", function() end)
 
 createButton("Player", function()
-    local scroll = Instance.new("ScrollingFrame", mainContent); scroll.Size = UDim2.new(1,0,1,0); scroll.BackgroundTransparency = 1; Instance.new("UIListLayout", scroll).Padding = UDim.new(0, 10)
+    local scroll = Instance.new("ScrollingFrame", mainContent); scroll.Size = UDim2.new(1,0,1,0); scroll.BackgroundTransparency = 1; Instance.new("UIListLayout", scroll).Padding = UDim.new(0, 10); scroll.ScrollBarThickness = 2
+    
     Elements.createSlider(scroll, "Speed", 16, 200, 16, updateSpeed)
+    Elements.createSlider(scroll, "Jump Power", 50, 300, 50, function(v) end) -- פלייסהולדר
+    
     Elements.createToggleButton(scroll, "Fly", false, toggleFly)
-    Elements.createToggleButton(scroll, "Noclip", false, function(s) 
-        noclipConn = s and RunService.Stepped:Connect(function() if lp.Character then for _,p in pairs(lp.Character:GetChildren()) do if p:IsA("BasePart") then p.CanCollide = false end end end) or (noclipConn and noclipConn:Disconnect())
-    end)
+    Elements.createToggleButton(scroll, "Noclip", false, function(s) end) -- פלייסהולדר
+    Elements.createToggleButton(scroll, "Inf Jump", false, function(s) end) -- פלייסהולדר
+    Elements.createToggleButton(scroll, "Auto Regen", false, function(s) end) -- פלייסהולדר
+    
+    -- כפתור Reset נפרד
+    local resetBtn = Instance.new("TextButton", scroll); resetBtn.Size = UDim2.new(0.9, 0, 0, 32); resetBtn.BackgroundColor3 = Color3.fromRGB(150, 60, 60); resetBtn.Text = "Reset Character"; resetBtn.TextColor3 = Color3.new(1,1,1); Elements.addCorner(resetBtn)
+    resetBtn.MouseButton1Click:Connect(function() if lp.Character then lp.Character:BreakJoints() end end)
 end)
