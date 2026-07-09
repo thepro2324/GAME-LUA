@@ -70,18 +70,37 @@ end
 createButton("Home", function() end)
 
 createButton("Player", function()
-    local scroll = Instance.new("ScrollingFrame", mainContent); scroll.Size = UDim2.new(1,0,1,0); scroll.BackgroundTransparency = 1; scroll.ScrollBarThickness = 2
-    scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y -- זה יסדר את בעיית הגלילה
-    local layout = Instance.new("UIListLayout", scroll); layout.Padding = UDim.new(0, 10); layout.PaddingTop = UDim.new(0, 10); layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    -- 1. יצירת ה-ScrollingFrame (זה הטאב עצמו)
+    local scroll = Instance.new("ScrollingFrame", mainContent)
+    scroll.Size = UDim2.new(1, 0, 1, 0)
+    scroll.BackgroundTransparency = 1      -- שקוף לחלוטין
+    scroll.BorderSizePixel = 0             -- בלי גבולות
+    scroll.ScrollBarThickness = 4          -- פס גלילה דק ואסתטי
+    scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y -- גלילה אוטומטית לפי תוכן
     
+    -- 2. סידור האלמנטים
+    local layout = Instance.new("UIListLayout", scroll)
+    layout.Padding = UDim.new(0, 8)
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    layout.PaddingTop = UDim.new(0, 10)
+    
+    -- הוספת אלמנטים (הם מתחברים ישירות ל-scroll)
     Elements.createSlider(scroll, "Speed", 16, 200, 16, updateSpeed)
     Elements.createSlider(scroll, "Jump Power", 50, 300, 50, updateJump)
-    
     Elements.createToggleButton(scroll, "Fly", false, toggleFly)
     Elements.createToggleButton(scroll, "Noclip", false, function(s) end)
     Elements.createToggleButton(scroll, "Inf Jump", false, function(s) end)
-    Elements.createToggleButton(scroll, "Auto Regen", false, function(s) end)
     
-    local resetBtn = Instance.new("TextButton", scroll); resetBtn.Size = UDim2.new(0.9, 0, 0, 32); resetBtn.BackgroundColor3 = Color3.fromRGB(150, 60, 60); resetBtn.Text = "Reset Character"; resetBtn.TextColor3 = Color3.new(1,1,1); Elements.addCorner(resetBtn, UDim.new(0, 5))
-    resetBtn.MouseButton1Click:Connect(function() if lp.Character then lp.Character:BreakJoints() end end)
+    -- כפתור Reset
+    local resetBtn = Instance.new("TextButton", scroll)
+    resetBtn.Size = UDim2.new(0.9, 0, 0, 32)
+    resetBtn.BackgroundColor3 = Color3.fromRGB(150, 60, 60)
+    resetBtn.Text = "Reset Character"
+    resetBtn.TextColor3 = Color3.new(1,1,1)
+    resetBtn.Font = Enum.Font.GothamBold
+    Elements.addCorner(resetBtn, UDim.new(0, 5))
+    
+    resetBtn.MouseButton1Click:Connect(function() 
+        if lp.Character then lp.Character:BreakJoints() end 
+    end)
 end)
