@@ -1,7 +1,8 @@
 local Module = {}
-function Module.init(parent, Elements)
-    Elements.createToggleButton(parent, "ESP Players", false, function(s) end)
-    Elements.createToggleButton(parent, "ESP Items", false, function(s) end)
-    Elements.createToggleButton(parent, "Chams", false, function(s) end)
+function Module.init(tab, Elements)
+    Elements.createToggleButton(tab, "ESP Players", false, function(s) end)
+    Elements.createToggleButton(tab, "ESP Items", false, function(s) end)
+    Elements.createToggleButton(tab, "Tracers", false, function(s) end)
+    Elements.createToggleButton(tab, "Fullbright", false, function(s) end)
 end
 return Module
