@@ -74,17 +74,37 @@ end
 
 -- === 3. לוגיקת כפתורים וטעינת מודולים ===
 local categories = {"Home", "Player", "Visuals", "Teleport", "Target", "World", "Settings"}
+
 for _, name in pairs(categories) do
     local tab = createTab(name)
-    local btn = Instance.new("TextButton", sidebar); btn.Size = UDim2.new(0.85, 0, 0, 45); btn.Text = name; btn.BackgroundColor3 = Colors.Button; btn.TextColor3 = Colors.Text; btn.Font = Enum.Font.GothamBold; btn.TextSize = 14; _G.Elements.addCorner(btn, UDim.new(0, 6))
+    local btn = Instance.new("TextButton", sidebar)
+    btn.Size = UDim2.new(0.85, 0, 0, 45); btn.Text = name; btn.BackgroundColor3 = Colors.Button
+    btn.TextColor3 = Colors.Text; btn.Font = Enum.Font.GothamBold; btn.TextSize = 14; _G.Elements.addCorner(btn, UDim.new(0, 6))
     
     btn.MouseButton1Click:Connect(function()
+        print("--- CLICK DETECTED: " .. name .. " ---") -- הודעה 1: נדע אם הכפתור עובד
+        
         for _, otherTab in pairs(Tabs) do otherTab.Visible = false end
         tab.Visible = true
+        
         if not initializedTabs[name] then
-            local mod = _G.loadModule(string.lower(name) .. ".lua") -- מחפש את הקובץ בגיטהאב
-            if mod then mod.init(tab, _G.Elements) initializedTabs[name] = true else warn("לא נמצא מודול: " .. name) end
+            local fileName = string.lower(name) .. ".lua"
+            print("Trying to load: " .. fileName) -- הודעה 2: נדע אם הוא מחפש את הקובץ הנכון
+            
+            local mod = _G.loadModule(fileName)
+            
+            if mod then
+                print("Module returned data, running init...") -- הודעה 3: נדע אם הקובץ תקין
+                pcall(function() mod.init(tab, _G.Elements) end)
+                initializedTabs[name] = true
+            else
+                warn("CRITICAL: Module " .. fileName .. " returned nil! (Check GitHub)")
+            end
+        else
+            print("Module already initialized.")
         end
     end)
+    
+    btn.MouseEnter:Connect(function() btn.BackgroundColor3 = Colors.Accent end)
+    btn.MouseLeave:Connect(function() btn.BackgroundColor3 = Colors.Button end)
 end
-Tabs["Home"].Visible = true
