@@ -1,62 +1,91 @@
 -- =========================================================================
--- ORI HUB - FINAL BUILD
+-- ORI HUB V11 - CLEAN & PROFESSIONAL UI
 -- =========================================================================
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
-local urlBase = "https://raw.githubusercontent.com/thepro2324/GAME-LUA/main/"
+local TweenService = game:GetService("TweenService")
 
--- 1. הגדרת ספרית ה-Elements (זה הלב של הכל!)
-_G.Elements = {}
-function _G.Elements.createToggleButton(parent, text, default, callback)
-    local btn = Instance.new("TextButton", parent)
-    btn.Size = UDim2.new(0.9, 0, 0, 35); btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    btn.Text = text .. ": " .. (default and "On" or "Off")
-    btn.TextColor3 = Color3.new(1, 1, 1); btn.Font = Enum.Font.Gotham; btn.TextSize = 14
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-    local state = default
-    btn.MouseButton1Click:Connect(function()
-        state = not state; btn.Text = text .. ": " .. (state and "On" or "Off")
-        callback(state)
-    end)
-end
+-- הגדרות צבעים (Dark Modern Theme)
+local Colors = {
+    Main = Color3.fromRGB(22, 22, 22),
+    Sidebar = Color3.fromRGB(28, 28, 28),
+    Button = Color3.fromRGB(35, 35, 35),
+    Accent = Color3.fromRGB(65, 130, 255), -- כחול יפה
+    Text = Color3.fromRGB(240, 240, 240)
+}
 
--- 2. פונקציית טעינה
+-- 1. פונקציית טעינה
 _G.loadModule = function(path)
-    local url = urlBase .. path
+    local url = "https://raw.githubusercontent.com/thepro2324/GAME-LUA/main/" .. path
     local success, response = pcall(function() return game:HttpGet(url) end)
     if not success then return nil end
-    local func = loadstring(response)
-    return func and func() or nil
+    return loadstring(response)()
 end
 
--- 3. יצירת ה-UI
+-- 2. יצירת ה-UI המעוצב
 if CoreGui:FindFirstChild("OriHub") then CoreGui:FindFirstChild("OriHub"):Destroy() end
 local screen = Instance.new("ScreenGui", CoreGui); screen.Name = "OriHub"
-local frame = Instance.new("Frame", screen); frame.Size = UDim2.new(0, 600, 0, 400)
-frame.Position = UDim2.new(0.5, -300, 0.5, -200); frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-frame.Active = true; Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
 
--- (גרירה)
-local dragStart, startPos; frame.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragStart = i.Position; startPos = frame.Position end end)
-UserInputService.InputChanged:Connect(function(i) if dragStart and i.UserInputType == Enum.UserInputType.MouseMovement then frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + (i.Position.X - dragStart.X), startPos.Y.Scale, startPos.Y.Offset + (i.Position.Y - dragStart.Y)) end end)
-UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragStart = nil end end)
+local frame = Instance.new("Frame", screen)
+frame.Size = UDim2.new(0, 550, 0, 350); frame.Position = UDim2.new(0.5, -275, 0.5, -175)
+frame.BackgroundColor3 = Colors.Main; frame.Active = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+Instance.new("UIStroke", frame).Color = Color3.fromRGB(50, 50, 50); Instance.new("UIStroke", frame).Thickness = 2
 
--- 4. צדדים
-local sidebar = Instance.new("Frame", frame); sidebar.Size = UDim2.new(0, 150, 1, 0); sidebar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-local content = Instance.new("Frame", frame); content.Size = UDim2.new(1, -150, 1, 0); content.Position = UDim2.new(0, 150, 0, 0); content.BackgroundTransparency = 1
-Instance.new("UIListLayout", sidebar).Padding = UDim.new(0, 5)
+-- === [מנוע גרירה חכם] ===
+local dragging, dragStart, startPos
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true; dragStart = input.Position; startPos = frame.Position
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
 
--- 5. כפתורים
+-- Sidebar
+local sidebar = Instance.new("Frame", frame); sidebar.Size = UDim2.new(0, 140, 1, 0)
+sidebar.BackgroundColor3 = Colors.Sidebar; Instance.new("UICorner", sidebar).CornerRadius = UDim.new(0, 12)
+Instance.new("UIListLayout", sidebar).Padding = UDim.new(0, 5); Instance.new("UIPadding", sidebar).PaddingTop = UDim.new(0, 10)
+
+-- Content
+local content = Instance.new("Frame", frame); content.Size = UDim2.new(1, -140, 1, 0); content.Position = UDim2.new(0, 140, 0, 0); content.BackgroundTransparency = 1
+
+-- 3. יצירת אלמנטים (Elements)
+_G.Elements = {}
+function _G.Elements.createToggleButton(parent, text, default, callback)
+    local btn = Instance.new("TextButton", parent); btn.Size = UDim2.new(0.9, 0, 0, 40)
+    btn.BackgroundColor3 = Colors.Button; btn.Text = text; btn.TextColor3 = Colors.Text
+    btn.Font = Enum.Font.GothamMedium; btn.AutoButtonColor = false
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+    
+    local state = default
+    local function update()
+        btn.BackgroundColor3 = state and Colors.Accent or Colors.Button
+        callback(state)
+    end
+    btn.MouseButton1Click:Connect(function() state = not state; update() end)
+    update()
+end
+
+-- 4. טעינת קטגוריות
 local categories = {"Home", "Player", "Visuals", "Settings"}
 for _, name in pairs(categories) do
-    local btn = Instance.new("TextButton", sidebar); btn.Size = UDim2.new(1, 0, 0, 40); btn.Text = name; btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45); btn.TextColor3 = Color3.new(1,1,1)
+    local btn = Instance.new("TextButton", sidebar); btn.Size = UDim2.new(0.9, 0, 0, 40)
+    btn.BackgroundColor3 = Colors.Button; btn.Text = name; btn.TextColor3 = Colors.Text; btn.Font = Enum.Font.GothamBold
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    
     btn.MouseButton1Click:Connect(function()
         content:ClearAllChildren()
         local mod = _G.loadModule("modules/"..string.lower(name)..".lua")
-        if mod and mod.init then
-            mod.init(content, _G.Elements)
-        else
-            warn("Module " .. name .. " not found or broken!")
-        end
+        if mod then mod.init(content, _G.Elements) end
     end)
+    
+    -- אפקט Hover (מעבר עכבר)
+    btn.MouseEnter:Connect(function() TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Colors.Accent}):Play() end)
+    btn.MouseLeave:Connect(function() TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Colors.Button}):Play() end)
 end
