@@ -1,43 +1,53 @@
 -- =========================================================================
--- ORI HUB - ORIGINAL DESIGN & DYNAMIC ENGINE
+-- ORI HUB V10 - FINAL COMBINED VERSION
 -- =========================================================================
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
-local Players = game:GetService("Players")
 
--- 1. ניקוי קודם
 if CoreGui:FindFirstChild("OriHub") then CoreGui:FindFirstChild("OriHub"):Destroy() end
 
--- 2. ספרית האלמנטים הגלובלית (כדי שהמודולים ישתמשו בה)
+local Colors = {
+    Main = Color3.fromRGB(20, 20, 20),
+    Sidebar = Color3.fromRGB(28, 28, 28),
+    Button = Color3.fromRGB(40, 40, 40),
+    Accent = Color3.fromRGB(60, 120, 255),
+    Text = Color3.fromRGB(255, 255, 255)
+}
+
+-- === 1. ספריית האלמנטים (הלב של יצירת הכפתורים) ===
 _G.Elements = {}
 function _G.Elements.addCorner(p, r) local c = Instance.new("UICorner", p); c.CornerRadius = r or UDim.new(0, 6) end
 
-function _G.Elements.createToggleButton(parent, text, isActive, callback)
-    local button = Instance.new("TextButton", parent); button.Size = UDim2.new(0.9, 0, 0, 32); button.BackgroundColor3 = Color3.fromRGB(22, 22, 28); button.Font = Enum.Font.GothamBold; button.TextSize = 12; _G.Elements.addCorner(button, UDim.new(0, 5))
-    local state = isActive; local function update() button.Text = text .. (state and " : ON" or " : OFF"); button.TextColor3 = state and Color3.fromRGB(80, 255, 140) or Color3.fromRGB(220, 80, 80) end; update()
-    button.MouseButton1Click:Connect(function() state = not state; update(); callback(state) end)
+function _G.Elements.createToggleButton(parent, text, default, callback)
+    local btn = Instance.new("TextButton", parent); btn.Size = UDim2.new(0.9, 0, 0, 35); btn.BackgroundColor3 = Colors.Button
+    btn.Text = text .. ": " .. (default and "ON" or "OFF"); btn.TextColor3 = Colors.Text; btn.Font = Enum.Font.GothamBold; btn.TextSize = 13
+    _G.Elements.addCorner(btn, UDim.new(0, 6))
+    local state = default
+    btn.MouseButton1Click:Connect(function()
+        state = not state; btn.Text = text .. ": " .. (state and "ON" or "OFF")
+        btn.BackgroundColor3 = state and Colors.Accent or Colors.Button
+        callback(state)
+    end)
+    return btn
 end
 
 function _G.Elements.createSlider(parent, text, min, max, default, callback)
-    local frame = Instance.new("Frame", parent); frame.Size = UDim2.new(0.9, 0, 0, 40); frame.BackgroundTransparency = 1
-    local label = Instance.new("TextLabel", frame); label.Size = UDim2.new(1, 0, 0, 20); label.Text = text .. " - " .. default; label.TextColor3 = Color3.new(1,1,1); label.BackgroundTransparency = 1; label.Font = Enum.Font.Gotham; label.TextSize = 12
-    local bg = Instance.new("Frame", frame); bg.Size = UDim2.new(1, 0, 0, 6); bg.Position = UDim2.new(0, 0, 0, 25); bg.BackgroundColor3 = Color3.fromRGB(25, 25, 32); _G.Elements.addCorner(bg, UDim.new(1, 0))
-    local fill = Instance.new("Frame", bg); fill.Size = UDim2.new((default-min)/(max-min), 0, 1, 0); fill.BackgroundColor3 = Color3.fromRGB(85, 110, 240); _G.Elements.addCorner(fill, UDim.new(1, 0))
-    bg.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then local pos = math.clamp((input.Position.X - bg.AbsolutePosition.X) / bg.AbsoluteSize.X, 0, 1); fill.Size = UDim2.new(pos, 0, 1, 0); local val = math.floor(min + (pos * (max-min))); label.Text = text .. " - " .. val; callback(val) end end)
+    local frame = Instance.new("Frame", parent); frame.Size = UDim2.new(0.9, 0, 0, 45); frame.BackgroundTransparency = 1
+    local label = Instance.new("TextLabel", frame); label.Size = UDim2.new(1,0,0,20); label.Text = text; label.TextColor3 = Colors.Text; label.BackgroundTransparency = 1
+    local bg = Instance.new("Frame", frame); bg.Size = UDim2.new(1, 0, 0, 6); bg.Position = UDim2.new(0,0,0,30); bg.BackgroundColor3 = Colors.Button; _G.Elements.addCorner(bg, UDim.new(1,0))
+    local fill = Instance.new("Frame", bg); fill.Size = UDim2.new((default-min)/(max-min), 0, 1, 0); fill.BackgroundColor3 = Colors.Accent; _G.Elements.addCorner(fill, UDim.new(1,0))
+    bg.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then 
+        local pos = math.clamp((input.Position.X - bg.AbsolutePosition.X) / bg.AbsoluteSize.X, 0, 1)
+        fill.Size = UDim2.new(pos, 0, 1, 0); local val = math.floor(min + (pos * (max-min))); callback(val)
+    end end)
 end
 
--- 3. פונקציית טעינת מודולים
-_G.loadModule = function(path)
-    local url = "https://raw.githubusercontent.com/thepro2324/GAME-LUA/main/" .. path
-    local success, response = pcall(function() return game:HttpGet(url) end)
-    if not success then return nil end
-    local func = loadstring(response)
-    return func and func() or nil
-end
-
--- 4. בניית ה-UI המקורי
+-- === 2. בניית ה-UI ===
 local screen = Instance.new("ScreenGui", CoreGui); screen.Name = "OriHub"
-local frame = Instance.new("Frame", screen); frame.Size = UDim2.new(0, 600, 0, 375); frame.Position = UDim2.new(0.5, -300, 0.5, -187.5); frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30); _G.Elements.addCorner(frame, UDim.new(0, 10)); frame.Active = true
+local frame = Instance.new("Frame", screen)
+frame.Size = UDim2.new(0, 600, 0, 400); frame.Position = UDim2.new(0.5, -300, 0.5, -200)
+frame.BackgroundColor3 = Colors.Main; frame.Active = true; _G.Elements.addCorner(frame, UDim.new(0, 10))
+Instance.new("UIStroke", frame).Color = Color3.fromRGB(50, 50, 50)
 
 -- מנוע גרירה
 local dragging, dragStart, startPos
@@ -45,22 +55,36 @@ frame.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.Mo
 UserInputService.InputChanged:Connect(function(i) if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + (i.Position.X - dragStart.X), startPos.Y.Scale, startPos.Y.Offset + (i.Position.Y - dragStart.Y)) end end)
 UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
 
-local sidebar = Instance.new("Frame", frame); sidebar.Size = UDim2.new(0, 140, 1, 0); sidebar.BackgroundColor3 = Color3.fromRGB(40, 40, 40); _G.Elements.addCorner(sidebar, UDim.new(0, 10))
-local mainContent = Instance.new("Frame", frame); mainContent.Size = UDim2.new(1, -140, 1, 0); mainContent.Position = UDim2.new(0, 140, 0, 0); mainContent.BackgroundTransparency = 1
+local sidebar = Instance.new("Frame", frame); sidebar.Size = UDim2.new(0, 160, 1, 0); sidebar.BackgroundColor3 = Colors.Sidebar; sidebar.Active = false; _G.Elements.addCorner(sidebar, UDim.new(0, 10))
+Instance.new("UIPadding", sidebar).PaddingTop = UDim.new(0, 15)
+Instance.new("UIListLayout", sidebar).Padding = UDim.new(0, 8); Instance.new("UIListLayout", sidebar).HorizontalAlignment = Enum.HorizontalAlignment.Center
 
--- 5. כפתורי צד וטעינה
-local btnY = 20
-local categories = {"Home", "Player", "Visuals", "Teleport", "Settings"}
+local content = Instance.new("Frame", frame); content.Size = UDim2.new(1, -160, 1, 0); content.Position = UDim2.new(0, 160, 0, 0); content.BackgroundTransparency = 1
+
+local initializedTabs = {}
+local Tabs = {}
+
+local function createTab(name)
+    local page = Instance.new("ScrollingFrame", content)
+    page.Size = UDim2.new(1, 0, 1, 0); page.BackgroundTransparency = 1; page.BorderSizePixel = 0; page.ScrollBarThickness = 2; page.Visible = false; page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    Instance.new("UIListLayout", page).Padding = UDim.new(0, 10); Instance.new("UIPadding", page).PaddingLeft = UDim.new(0, 15); Instance.new("UIPadding", page).PaddingTop = UDim.new(0, 15)
+    Tabs[name] = page
+    return page
+end
+
+-- === 3. לוגיקת כפתורים וטעינת מודולים ===
+local categories = {"Home", "Player", "Visuals", "Teleport", "Target", "World", "Settings"}
 for _, name in pairs(categories) do
-    local b = Instance.new("TextButton", sidebar); b.Size = UDim2.new(0.8, 0, 0, 35); b.Position = UDim2.new(0.1, 0, 0, btnY); b.Text = name; b.BackgroundColor3 = Color3.fromRGB(60, 60, 60); b.TextColor3 = Color3.new(1,1,1); b.Font = Enum.Font.Gotham; _G.Elements.addCorner(b, UDim.new(0, 6))
-    b.MouseButton1Click:Connect(function()
-        mainContent:ClearAllChildren()
-        local mod = _G.loadModule("modules/"..string.lower(name)..".lua")
-        if mod and mod.init then
-            local scroll = Instance.new("ScrollingFrame", mainContent); scroll.Size = UDim2.new(1,0,1,0); scroll.BackgroundTransparency = 1; scroll.ScrollBarThickness = 2; scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-            Instance.new("UIListLayout", scroll).Padding = UDim.new(0, 10)
-            mod.init(scroll, _G.Elements)
+    local tab = createTab(name)
+    local btn = Instance.new("TextButton", sidebar); btn.Size = UDim2.new(0.85, 0, 0, 45); btn.Text = name; btn.BackgroundColor3 = Colors.Button; btn.TextColor3 = Colors.Text; btn.Font = Enum.Font.GothamBold; btn.TextSize = 14; _G.Elements.addCorner(btn, UDim.new(0, 6))
+    
+    btn.MouseButton1Click:Connect(function()
+        for _, otherTab in pairs(Tabs) do otherTab.Visible = false end
+        tab.Visible = true
+        if not initializedTabs[name] then
+            local mod = _G.loadModule(string.lower(name) .. ".lua") -- מחפש את הקובץ בגיטהאב
+            if mod then mod.init(tab, _G.Elements) initializedTabs[name] = true else warn("לא נמצא מודול: " .. name) end
         end
     end)
-    btnY += 45
 end
+Tabs["Home"].Visible = true
