@@ -49,7 +49,7 @@ UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserI
 local sidebar = Instance.new("Frame", frame); sidebar.Size = UDim2.new(0, 160, 1, 0); sidebar.BackgroundColor3 = Colors.Sidebar; _G.Elements.addCorner(sidebar)
 Instance.new("UIListLayout", sidebar).Padding = UDim.new(0, 8); Instance.new("UIPadding", sidebar).PaddingTop = UDim.new(0, 15); Instance.new("UIListLayout", sidebar).HorizontalAlignment = Enum.HorizontalAlignment.Center
 local content = Instance.new("Frame", frame); content.Size = UDim2.new(1, -160, 1, 0); content.Position = UDim2.new(0, 160, 0, 0); content.BackgroundTransparency = 1
-
+-- לוגיקת טעינת מודולים מתוקנת
 local categories = {"Home", "Player", "Visuals", "Teleport", "Target", "World", "Settings"}
 for _, name in pairs(categories) do
     local tab = Instance.new("ScrollingFrame", content); tab.Size = UDim2.new(1,0,1,0); tab.BackgroundTransparency = 1; tab.Visible = false; tab.AutomaticCanvasSize = Enum.AutomaticSize.Y
@@ -61,13 +61,22 @@ for _, name in pairs(categories) do
     btn.MouseButton1Click:Connect(function()
         for _, c in pairs(content:GetChildren()) do if c:IsA("ScrollingFrame") then c.Visible = false end end
         tab.Visible = true
+        
         if not loaded then
             local url = "https://raw.githubusercontent.com/thepro2324/GAME-LUA/main/modules/" .. string.lower(name) .. ".lua"
             local success, res = pcall(function() return game:HttpGet(url) end)
             if success and res then
                 local func = loadstring(res)
-                if func then func()(tab, _G.Elements) end
-                loaded = true
+                if func then 
+                    local mod = func() -- טעינת המודול לתוך משתנה
+                    -- כאן התיקון: בדיקה אם המודול הוא טבלה עם פונקציית init
+                    if type(mod) == "table" and mod.init then
+                        mod.init(tab, _G.Elements)
+                    elseif type(mod) == "function" then
+                        mod(tab, _G.Elements)
+                    end
+                    loaded = true
+                end
             end
         end
     end)
