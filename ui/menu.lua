@@ -58,25 +58,32 @@ for _, name in pairs(categories) do
     local btn = Instance.new("TextButton", sidebar); btn.Size = UDim2.new(0.85, 0, 0, 45); btn.Text = name; btn.BackgroundColor3 = Colors.Button; btn.TextColor3 = Colors.Text; btn.Font = Enum.Font.GothamBold; btn.TextSize = 16; _G.Elements.addCorner(btn)
     
     local loaded = false
-    btn.MouseButton1Click:Connect(function()
+btn.MouseButton1Click:Connect(function()
         for _, c in pairs(content:GetChildren()) do if c:IsA("ScrollingFrame") then c.Visible = false end end
         tab.Visible = true
         
         if not loaded then
             local url = "https://raw.githubusercontent.com/thepro2324/GAME-LUA/main/modules/" .. string.lower(name) .. ".lua"
             local success, res = pcall(function() return game:HttpGet(url) end)
+            
             if success and res then
                 local func = loadstring(res)
-                if func then 
-                    local mod = func() -- טעינת המודול לתוך משתנה
-                    -- כאן התיקון: בדיקה אם המודול הוא טבלה עם פונקציית init
-                    if type(mod) == "table" and mod.init then
-                        mod.init(tab, _G.Elements)
-                    elseif type(mod) == "function" then
-                        mod(tab, _G.Elements)
+                if func then
+                    local moduleReturn = func() -- כאן אנחנו שומרים את מה שהמודול מחזיר
+                    
+                    -- בדיקה חכמה: האם זה טבלה עם פונקציית init?
+                    if type(moduleReturn) == "table" and moduleReturn.init then
+                        moduleReturn.init(tab, _G.Elements)
+                    -- או שאולי זה פונקציה ישירות?
+                    elseif type(moduleReturn) == "function" then
+                        moduleReturn(tab, _G.Elements)
+                    else
+                        warn("Module " .. name .. " did not return a valid table or function")
                     end
                     loaded = true
                 end
+            else
+                warn("Failed to load module: " .. name)
             end
         end
     end)
