@@ -1,9 +1,7 @@
 local Module = {}
-function Module.init(parent, Elements)
-    Elements.createToggleButton(parent, "UI Toggle", true, function(s) end)
-    local resetBtn = Instance.new("TextButton", parent)
-    resetBtn.Size = UDim2.new(0.9, 0, 0, 35); resetBtn.Text = "Destroy UI"
-    resetBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50); resetBtn.TextColor3 = Color3.new(1,1,1)
-    resetBtn.MouseButton1Click:Connect(function() game:GetService("CoreGui").OriHub:Destroy() end)
+function Module.init(tab, Elements)
+    Elements.createToggleButton(tab, "UI Toggle (Press Insert)", true, function(s) end)
+    Elements.createButton(tab, "Destroy GUI", function() game:GetService("CoreGui").OriHub:Destroy() end)
+    Elements.createLabel(tab, "Version: 1.2.0")
 end
 return Module
