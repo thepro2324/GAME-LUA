@@ -1,5 +1,5 @@
 -- =========================================================================
--- ORI HUB V13 - STABLE, FAST & MODULAR
+-- ORI HUB V13 - STABLE, FAST & MODULAR (FIXED)
 -- =========================================================================
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
@@ -20,7 +20,7 @@ function _G.Elements.createButton(parent, text, callback)
     return btn
 end
 
--- סליידר חדש ומקצועי (למהירות, קפיצה, תעופה)
+-- סליידר מקצועי
 function _G.Elements.createSlider(parent, text, min, max, default, callback)
     local container = Instance.new("Frame", parent); container.Size = UDim2.new(0.9, 0, 0, 50); container.BackgroundTransparency = 1
     local lbl = Instance.new("TextLabel", container); lbl.Size = UDim2.new(1, 0, 0, 20); lbl.BackgroundTransparency = 1; lbl.Text = text .. ": " .. default; lbl.TextColor3 = Colors.Text; lbl.Font = Enum.Font.GothamBold
@@ -49,7 +49,8 @@ UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserI
 local sidebar = Instance.new("Frame", frame); sidebar.Size = UDim2.new(0, 160, 1, 0); sidebar.BackgroundColor3 = Colors.Sidebar; _G.Elements.addCorner(sidebar)
 Instance.new("UIListLayout", sidebar).Padding = UDim.new(0, 8); Instance.new("UIPadding", sidebar).PaddingTop = UDim.new(0, 15); Instance.new("UIListLayout", sidebar).HorizontalAlignment = Enum.HorizontalAlignment.Center
 local content = Instance.new("Frame", frame); content.Size = UDim2.new(1, -160, 1, 0); content.Position = UDim2.new(0, 160, 0, 0); content.BackgroundTransparency = 1
--- לוגיקת טעינת מודולים מתוקנת
+
+-- לוגיקת טעינת מודולים
 local categories = {"Home", "Player", "Visuals", "Teleport", "Target", "World", "Settings"}
 for _, name in pairs(categories) do
     local tab = Instance.new("ScrollingFrame", content); tab.Size = UDim2.new(1,0,1,0); tab.BackgroundTransparency = 1; tab.Visible = false; tab.AutomaticCanvasSize = Enum.AutomaticSize.Y
@@ -58,7 +59,7 @@ for _, name in pairs(categories) do
     local btn = Instance.new("TextButton", sidebar); btn.Size = UDim2.new(0.85, 0, 0, 45); btn.Text = name; btn.BackgroundColor3 = Colors.Button; btn.TextColor3 = Colors.Text; btn.Font = Enum.Font.GothamBold; btn.TextSize = 16; _G.Elements.addCorner(btn)
     
     local loaded = false
-btn.MouseButton1Click:Connect(function()
+    btn.MouseButton1Click:Connect(function()
         for _, c in pairs(content:GetChildren()) do if c:IsA("ScrollingFrame") then c.Visible = false end end
         tab.Visible = true
         
@@ -69,12 +70,10 @@ btn.MouseButton1Click:Connect(function()
             if success and res then
                 local func = loadstring(res)
                 if func then
-                    local moduleReturn = func() -- כאן אנחנו שומרים את מה שהמודול מחזיר
+                    local moduleReturn = func()
                     
-                    -- בדיקה חכמה: האם זה טבלה עם פונקציית init?
                     if type(moduleReturn) == "table" and moduleReturn.init then
                         moduleReturn.init(tab, _G.Elements)
-                    -- או שאולי זה פונקציה ישירות?
                     elseif type(moduleReturn) == "function" then
                         moduleReturn(tab, _G.Elements)
                     else
@@ -86,5 +85,5 @@ btn.MouseButton1Click:Connect(function()
                 warn("Failed to load module: " .. name)
             end
         end
-    end)    end)
+    end)
 end
